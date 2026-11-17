@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_blank">
+<title>PCG Bid Manager</title>
+<!-- PCG Bid Manager v3.0.0 -->
+<style>
+  :root {
+    --navy:#1f3a5f; --navy-2:#2c4f7c; --ink:#1d2433; --muted:#667085; --line:#e3e7ee; --bg:#f4f6f9; --card:#fff;
+    --ok:#1e7b34; --ok-bg:#e7f5ea; --warn:#9a5b00; --warn-bg:#fff3dc; --bad:#b42318; --bad-bg:#fdecea;
+    --info:#1f4f8f; --info-bg:#e8f0fb; --grey-bg:#eef0f3;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  button, input, select, textarea { font:inherit; color:inherit; }
+  a { color:var(--navy-2); }
+
+  .top { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:10px 20px; background:var(--navy); color:#fff; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .logo { background:#fff; color:var(--navy); font-weight:800; font-size:12px; letter-spacing:.06em; border-radius:6px; padding:5px 7px; }
+  .brand b { display:block; font-size:15px; line-height:1.1; }
+  .brand small { font-size:11px; opacity:.7; }
+  nav { display:flex; gap:2px; }
+  .nav { background:none; border:0; color:#c9d5e6; font-weight:600; padding:8px 12px; border-radius:7px; cursor:pointer; }
+  .nav:hover { color:#fff; background:rgba(255,255,255,.1); }
+  .nav.on { color:#fff; background:rgba(255,255,255,.18); }
+  .top-right { margin-left:auto; display:flex; gap:14px; align-items:center; font-size:12px; color:#c9d5e6; }
+  .demo { background:var(--warn-bg); color:var(--warn); text-align:center; padding:7px 12px; font-size:13px; border-bottom:1px solid #f1d9a8; }
+
+  main { max-width:1200px; margin:0 auto; padding:20px; }
+  .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .bar h1 { font-size:20px; margin:0 auto 0 0; }
+  .grow { flex:1; }
+
+  .btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; padding:8px 13px; border-radius:8px; font-weight:600; cursor:pointer; white-space:nowrap; text-decoration:none; color:var(--ink); }
+  .btn:hover { border-color:#c5ccd8; background:#fafbfc; }
+  .btn.primary { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .btn.primary:hover { background:var(--navy-2); }
+  .btn.danger { color:var(--bad); }
+  .btn.small { padding:5px 9px; font-size:13px; }
+  .btn:disabled { opacity:.45; cursor:default; }
+  .icon-btn { border:0; background:none; cursor:pointer; padding:5px 7px; border-radius:6px; color:var(--muted); font-size:15px; line-height:1; }
+  .icon-btn:hover { background:var(--grey-bg); color:var(--ink); }
+
+  input[type=text], input[type=password], input[type=number], input[type=email], input[type=tel], input[type=search], input[type=url], input[type=date], input[type=datetime-local], select, textarea {
+    border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; width:100%;
+  }
+  input:focus, select:focus, textarea:focus { outline:2px solid #9db8dd; outline-offset:0; border-color:#9db8dd; }
+  .search { max-width:280px; }
+  textarea { resize:vertical; }
+
+  .seg { display:inline-flex; background:#fff; border:1px solid var(--line); border-radius:8px; padding:2px; }
+  .seg button { border:0; background:none; padding:6px 11px; border-radius:6px; cursor:pointer; font-weight:600; color:var(--muted); }
+  .seg button.on { background:var(--navy); color:#fff; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  .pad { padding:16px 18px; }
+  .tbl-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap; background:#fafbfc; }
+  td { padding:10px 12px; border-bottom:1px solid #eef1f5; vertical-align:middle; }
+  tr:last-child td { border-bottom:0; }
+  tr.click { cursor:pointer; }
+  tr.click:hover td { background:#f8fafc; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .t1 { font-weight:600; }
+  .t2 { color:var(--muted); font-size:13px; }
+  .t3 { color:var(--muted); font-size:12px; margin-top:2px; }
+  .muted { color:var(--muted); }
+  .empty { padding:40px 20px; text-align:center; color:var(--muted); }
+  .empty b { display:block; color:var(--ink); font-size:16px; margin-bottom:4px; }
+
+  .chip { display:inline-block; background:var(--grey-bg); color:#3b4556; border-radius:999px; padding:2px 9px; font-size:12px; margin:1px 3px 1px 0; white-space:nowrap; }
+  .pill { display:inline-block; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .p-draft { background:var(--grey-bg); color:#4a5466; }
+  .p-out { background:var(--info-bg); color:var(--info); }
+  .p-level { background:var(--warn-bg); color:var(--warn); }
+  .p-awarded { background:var(--ok-bg); color:var(--ok); }
+  .p-closed { background:#f0f0f0; color:#888; }
+  .due { font-weight:600; white-space:nowrap; }
+  .due small { display:block; font-weight:500; font-size:12px; }
+  .due.late small, .due.today small { color:var(--bad); }
+  .due.soon small { color:var(--warn); }
+  .due.later small { color:var(--muted); }
+
+  /* package detail */
+  .back { background:none; border:0; color:var(--navy-2); cursor:pointer; font-weight:600; padding:0; margin-bottom:10px; }
+  .head { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; margin-bottom:14px; }
+  .head h1 { margin:0; font-size:22px; }
+  .head .sub { color:var(--muted); font-size:15px; }
+  .head .acts { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .head select { width:auto; font-weight:600; }
+  .info { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px 24px; }
+  .info label { display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; }
+  .scope { white-space:pre-wrap; margin:0; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:14px 0; }
+  .stat { background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  .stat span { display:block; font-size:12px; color:var(--muted); }
+  .stat b { font-size:20px; font-variant-numeric:tabular-nums; }
+  .stat.low b { color:var(--ok); }
+  .section-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:12px 14px; border-bottom:1px solid var(--line); }
+  .section-bar h2 { font-size:16px; margin:0 auto 0 0; }
+  .bidders td { padding:8px 10px; }
+  .bidders input[type=text], .bidders input[type=date], .bidders select { padding:6px 8px; }
+  .bidders .amt { width:120px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .bidders .notes { min-width:180px; }
+  .bidders input[type=date] { width:140px; }
+  .bidders select { width:156px; font-weight:600; }
+  tr.low td { background:#f2faf3; }
+  tr.dim td { opacity:.6; }
+  .tag-low { background:var(--ok); color:#fff; font-size:10px; font-weight:700; border-radius:4px; padding:1px 5px; margin-left:6px; vertical-align:2px; }
+  .s-Not-Sent { background:#fff; }
+  .s-Invited { background:var(--info-bg); color:var(--info); }
+  .s-Will-Bid { background:var(--warn-bg); color:var(--warn); }
+  .s-No-Bid { background:var(--bad-bg); color:var(--bad); }
+  .s-Quote-Received { background:var(--ok-bg); color:var(--ok); }
+  .s-Awarded { background:var(--ok); color:#fff; }
+  .acts-cell { white-space:nowrap; text-align:right; }
+  input[type=checkbox] { width:16px; height:16px; accent-color:var(--navy); cursor:pointer; }
+
+  /* modal */
+  .overlay { position:fixed; inset:0; background:rgba(15,23,42,.45); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:50; }
+  .modal { background:#fff; border-radius:14px; width:100%; max-width:640px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  .modal.wide { max-width:900px; }
+  .modal header { display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); }
+  .modal header h3 { margin:0; font-size:17px; flex:1; }
+  .modal .body { padding:18px 20px; }
+  .modal footer { display:flex; gap:8px; align-items:center; justify-content:flex-end; padding:14px 20px; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .modal footer .left { margin-right:auto; font-size:13px; color:var(--muted); }
+  .field { margin-bottom:14px; }
+  .field > label { display:block; font-weight:600; font-size:13px; margin-bottom:5px; }
+  .field .hint { font-weight:400; color:var(--muted); font-size:12px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .err-box { background:var(--bad-bg); color:var(--bad); border-radius:8px; padding:9px 12px; margin-bottom:12px; font-weight:600; }
+
+  .tp { display:flex; flex-wrap:wrap; gap:6px; }
+  .tp .chip { cursor:pointer; border:1px solid var(--line); background:#fff; padding:4px 10px; font-size:13px; margin:0; }
+  .tp .chip.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .tp input { width:150px; padding:4px 10px; border-radius:999px; font-size:13px; }
+
+  .pick-list { border:1px solid var(--line); border-radius:10px; max-height:380px; overflow-y:auto; }
+  .pick { display:flex; gap:10px; align-items:flex-start; padding:9px 12px; border-bottom:1px solid #eef1f5; cursor:pointer; }
+  .pick:last-child { border-bottom:0; }
+  .pick:hover { background:#f8fafc; }
+  .pick.disabled { opacity:.5; cursor:default; }
+  .pick input { margin-top:3px; }
+  .pick .grow > div:first-child { font-weight:600; }
+
+  .send-grid { display:grid; grid-template-columns:240px 1fr; gap:16px; }
+  .rcpt { border:1px solid var(--line); border-radius:10px; max-height:420px; overflow-y:auto; }
+  .rcpt label { display:flex; gap:8px; align-items:flex-start; padding:8px 10px; border-bottom:1px solid #eef1f5; font-size:13px; cursor:pointer; }
+  .rcpt label:last-child { border-bottom:0; }
+  .rcpt small { display:block; color:var(--muted); word-break:break-all; }
+  .preview { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:13px; max-height:300px; overflow-y:auto; }
+  .preview .pv-subj { padding-bottom:8px; margin-bottom:10px; border-bottom:1px solid var(--line); }
+  .fmt-bar { display:flex; gap:4px; align-items:center; margin-bottom:5px; flex-wrap:wrap; }
+  .fb { border:1px solid var(--line); background:#fff; border-radius:6px; min-width:30px; padding:3px 8px; cursor:pointer; font-size:13px; }
+  .fb:hover { background:var(--grey-bg); }
+  .fmt-bar .ph { margin:0 0 0 6px; }
+  .logo-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .logo-row img { max-height:90px; max-width:320px; border:1px solid var(--line); border-radius:6px; padding:6px; background:#fff; }
+  .proj-tbl input[type=url] { min-width:260px; }
+  .ms-box { border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:16px; background:#fafbfc; }
+  .ms-status { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .ms-ok { color:var(--ok); font-weight:700; }
+  .ms-steps { font-size:13px; line-height:1.6; margin:0 0 12px; }
+  .ms-steps summary { cursor:pointer; font-weight:600; color:var(--navy-2); }
+  .ms-steps ol { padding-left:20px; margin:8px 0; }
+  .copy-line { display:flex; gap:6px; align-items:center; }
+  .copy-line code { flex:1; background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; word-break:break-all; }
+  .ph { font-size:12px; color:var(--muted); margin:4px 0 0; }
+  .ph code { background:var(--grey-bg); border-radius:4px; padding:0 4px; cursor:pointer; }
+
+  .settings { max-width:1040px; }
+  .proj-tbl .acts-cell .btn { margin:2px 0; }
+  .settings h2 { font-size:16px; margin:22px 0 10px; }
+  .settings h2:first-child { margin-top:0; }
+
+  .toasts { position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:80; max-width:420px; }
+  .toast { background:#1d2433; color:#fff; padding:11px 14px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.2); font-weight:500; }
+  .toast.err { background:var(--bad); }
+  .toast.warn { background:#8a5300; }
+  .loading { padding:80px 20px; text-align:center; color:var(--muted); }
+  .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login { width:100%; max-width:380px; padding:28px; box-shadow:0 10px 30px rgba(15,23,42,.08); }
+
+  .code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; background:var(--grey-bg); border-radius:4px; padding:1px 5px; white-space:nowrap; }
+  .codes-list div { padding:1px 0; }
+  .var { display:block; font-size:12px; font-weight:600; }
+  .var.over { color:var(--bad); } .var.under { color:var(--ok); }
+  .stat > span:last-child:not(:first-child) { margin-top:2px; }
+  .code-chips { display:flex; flex-direction:column; gap:6px; }
+  .code-chip { display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px; padding:5px 6px 5px 10px; font-size:13px; }
+  .code-chip .grow { min-width:0; }
+  .code-total { font-size:13px; color:var(--muted); text-align:right; }
+  .howto { background:var(--info-bg); border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:10px; }
+  .howto ul { margin:6px 0; padding-left:18px; }
+  .imp-tbl { max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:10px; }
+  .imp-tbl td { padding:4px 6px; }
+  .imp-tbl th { padding:8px 6px; position:sticky; top:0; z-index:1; }
+  .imp-tbl input[type=text] { padding:5px 7px; min-width:120px; }
+  .imp-st { font-size:12px; font-weight:600; white-space:nowrap; }
+  .imp-st.new { color:var(--ok); } .imp-st.upd { color:var(--info); } .imp-st.bad { color:var(--bad); }
+
+  @media (max-width:720px) {
+    main { padding:14px; }
+    .top { padding:10px 14px; gap:10px; }
+    .top-right { display:none; }
+    .row2, .send-grid { grid-template-columns:1fr; }
+    .search { max-width:none; }
+    .hide-sm { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Loading bid manager…</div></div>
+<div id="modal-root"></div>
+<div id="confirm-root"></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+'use strict';
+/* ============================ CONNECTION ============================
+ * When this page is hosted on your website, paste your Apps Script web app
+ * URL (Deploy → Manage deployments → Web app URL, ends in /exec) between the
+ * quotes. When the page runs inside Apps Script itself, this is ignored.
+ */
+const API_URL = '';
+const VERSION = '3.0.0';
+const INV_ST = ['Not Sent', 'Invited', 'Will Bid', 'No Bid', 'Quote Received', 'Awarded'];
+const PKG_ST = ['Draft', 'Out to Bid', 'Leveling', 'Awarded', 'Closed'];
+const ACTIVE_PKG = ['Draft', 'Out to Bid', 'Leveling'];
+const PRE_QUOTE = ['Not Sent', 'Invited', 'Will Bid'];
+const DIVS = { '00': 'Procurement & Contracting', '01': 'General Conditions', '02': 'Existing Conditions', '03': 'Concrete', '04': 'Masonry',
+  '05': 'Metals', '06': 'Wood, Plastics & Composites', '07': 'Thermal & Moisture Protection', '08': 'Openings', '09': 'Finishes',
+  '10': 'Specialties', '11': 'Equipment', '12': 'Furnishings', '13': 'Special Construction', '14': 'Conveying Equipment',
+  '21': 'Fire Suppression', '22': 'Plumbing', '23': 'HVAC', '25': 'Integrated Automation', '26': 'Electrical', '27': 'Communications',
+  '28': 'Electronic Safety & Security', '31': 'Earthwork', '32': 'Exterior Improvements', '33': 'Utilities' };
+
+const DEFAULTS = {
+  companyName: 'Perimeter Construction Group',
+  senderName: '',
+  replyTo: '',
+  copyTo: '',
+  signature: '',
+  logo: '',
+  logoWidth: '180',
+  outlookOwnSig: 'N',
+  outlookBcc: 'Y',
+  sendVia: 'google',
+  projects: '{}',
+  trades: ['Sitework', 'Utilities', 'Concrete', 'Rebar', 'Masonry', 'Structural Steel', 'Framing', 'Trusses', 'Roofing',
+    'Waterproofing', 'Windows & Storefront', 'Doors & Hardware', 'Insulation', 'Drywall', 'Acoustical Ceilings', 'Painting',
+    'Flooring', 'Tile', 'Millwork', 'Specialties', 'Elevator', 'Fire Sprinkler', 'Plumbing', 'HVAC', 'Electrical',
+    'Fire Alarm', 'Low Voltage', 'Paving', 'Landscaping', 'Pool'].join('\n'),
+  costCodes: '01-31-00 Project Management\n01-32-00 Construction Progress Documentation\n01-51-13 Temporary Electricity\n01-51-23 Temporary Heating, Cooling & Ventilation\n01-51-26 Temporary Lighting\n01-51-33 Temporary Telecommunications\n01-51-36 Temporary Water\n01-52-13 Construction Facilities\n01-52-19 Sanitary Facilities\n01-54-00 Construction Aids\n01-56-00 Temporary Barriers and Enclosures\n01-58-00 Project Identification\n01-66-00 Material Storage and Handling\n01-70-00 Execution and Closeout\n01-71-00 Mobilization\n01-74-00 Cleaning and Waste Management\n02-21-00 Site Survey\n03-05-00 Concrete Material\n03-11-00 Concrete Forming\n03-21-00 Reinforcing Steel\n03-22-00 Welded Wire Fabric Reinforcing\n03-30-00 Concrete Walls\n03-35-00 Concrete Finishing\n03-49-00 Light Weight Concrete\n03-54-00 Cast Underlayment\n03-62-00 Grouting\n03-70-00 Dumpster Pad\n03-71-00 Concrete Pump\n03-81-00 Concrete Cutting\n04-21-13 Brick Masonry\n04-22-00 Concrete Unit Masonry\n04-43-00 Stone Masonry\n05-01-00 Metals\n05-05-23 Metal Fastenings\n05-72-00 Alternating Tread\n06-10-00 Rough Carpentry\n06-13-23 Heavy Timber Construction\n06-17-00 Roof/Floor Trusses\n06-20-00 Finish Carpentry\n06-22-00 Millwork\n06-43-00 Wood Stairs and Railings\n07-11-00 Damp Proofing and Waterproofing\n07-21-00 Thermal Insulation\n07-24-00 Exterior Insulation and Finish Systems\n07-53-00 Membrane Roofing\n07-65-10 Flashing & Sheet Metal\n07-71-23 Manufactured Gutters and Downspouts\n07-72-00 Roof Accessories\n07-84-13 Penetration Firestopping\n07-92-00 Joint Sealants\n08-12-13 Metal Doors and Frames\n08-32-00 Sliding Glass Doors\n08-41-00 Entrances & Storefront\n08-51-00 Windows\n08-71-20 Door Thresholds\n08-83-00 Mirrors\n08-91-00 Card Key Access Control\n09-21-16 Shaft Walls\n09-29-00 Gypsum Wallboard\n09-30-10 Bathroom Tile\n09-30-11 Lobby Tile\n09-30-12 Epoxy Grout\n09-51-23 Acoustical Tile Ceiling\n09-54-33 Decorative Panel Ceilings\n09-61-19 Concrete Floor Stain\n09-65-00 Resilient Flooring/VCT\n09-68-01 Carpet Labor\n09-72-23 Vinyl Wall Covering\n09-91-13 Exterior Painting\n09-91-23 Interior Painting\n09-96-46 Intumescent Painting\n10-14-00 Signage\n10-26-13 Corner Guards\n10-28-16 Bath Accessories\n10-28-19 Tub and Shower Doors\n10-31-13 Manufactured Fireplaces\n10-44-16 Fire Extinguishers\n10-60-00 Granite Material\n10-60-12 Cultured Marble Material\n11-30-13 Appliances Guestroom\n12-54-13 Furniture Install\n13-11-00 Swimming Pools\n13-11-10 Pool Apron\n13-11-11 Pool Fence\n13-11-12 Pool House\n13-11-46 Pool Chair Lift\n14-21-23 Elevator\n14-25-00 Temporary Elevator\n14-91-33 Laundry and Linen Chutes\n21-13-13 Sprinkler System\n22-01-00 Plumbing\n22-10-00 Domestic Water Supply\n22-13-00 Sanitary Sewer\n23-01-00 HVAC\n23-14-00 PTAC Material\n26-01-00 Electrical\n26-51-00 Interior Lighting\n26-53-00 Generator and Transfer Switch\n28-01-00 Electronic Safety and Security\n28-31-00 Detection and Fire Alarm\n28-35-00 First Responders System\n31-22-00 Grading\n31-51-00 Dirt Import/Export\n32-12-16 Asphalt Paving\n32-13-13 Concrete Paving\n32-13-14 Concrete Pads and\n32-16-00 Curbs and Gutters\n32-17-23 Pavement Markings\n32-93-00 Plant Materials\n33-42-00 Storm Sewer\n33-50-00 Bio Pond Retention',
+  inviteSubject: 'Request for Quote: {project} – {package} (due {dueShort})',
+  inviteBody:
+    'Hi {firstName},\n\n' +
+    '{companyName} is requesting your quote for the following:\n\n' +
+    '**Project:** {project}\n' +
+    '**Bid package:** {package}\n' +
+    '**Quotes due:** {due}\n\n' +
+    '**Scope:**\n{scope}\n\n' +
+    '**Plans & specs:** {plans}\n\n' +
+    'Please reply to this email with your quote, or let us know if you will not be bidding.\n\n' +
+    'Thank you,\n{signature}',
+  reminderSubject: 'Reminder: {project} – {package} quotes due {dueShort}',
+  reminderBody:
+    'Hi {firstName},\n\n' +
+    'Friendly reminder that quotes for **{project} – {package}** are due **{due}**.\n\n' +
+    'Plans & specs: {plans}\n\n' +
+    'Please reply with your quote, or let us know if you are passing on this one.\n\n' +
+    'Thank you,\n{signature}'
+};
+
+/* ============================ helpers ============================ */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const lc = s => String(s || '').trim().toLowerCase();
+const errMsg = e => (e && e.message) ? e.message : String(e);
+const isEmail = e => /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(String(e || '').trim());
+const cls = s => String(s || '').replace(/\s+/g, '-');
+
+function splitTrades(s) {
+  const seen = new Set(), out = [];
+  String(s || '').split(/[,;\n]/).map(t => t.trim()).filter(Boolean).forEach(t => {
+    if (!seen.has(lc(t))) { seen.add(lc(t)); out.push(t); }
+  });
+  return out;
+}
+function num(v) {
+  if (v === '' || v == null) return null;
+  const n = Number(String(v).replace(/[$,\s]/g, ''));
+  return isFinite(n) ? n : null;
+}
+function money(v) {
+  const n = num(v);
+  if (n == null) return '';
+  const cents = Math.round(n * 100) % 100 !== 0;
+  return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 });
+}
+function plainNum(v) {
+  const n = num(v);
+  return n == null ? '' : n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+function parseLocal(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?$/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0);
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+function hasTime(s) { return /T\d{2}:\d{2}/.test(String(s || '')) && !/T00:00/.test(String(s)); }
+function fmtDue(s) {
+  const d = parseLocal(s);
+  if (!d) return '';
+  const ds = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  return hasTime(s) ? ds + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ds;
+}
+function fmtShort(s) { const d = parseLocal(s); return d ? (d.getMonth() + 1) + '/' + d.getDate() : ''; }
+function fmtStamp(s) { if (!s) return ''; const d = new Date(s); return isNaN(d) ? '' : (d.getMonth() + 1) + '/' + d.getDate(); }
+function today() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function daysLeft(s) {
+  const d = parseLocal(s);
+  if (!d) return null;
+  const a = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const n = new Date(); const b = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  return Math.round((a - b) / 864e5);
+}
+function tradeList() { return splitTrades(S.settings.trades); }
+
+/* ---------- CSI cost codes + budgets ---------- */
+function parseCodeLine(line) {
+  const m = String(line || '').trim().match(/^(\d{2})[\s.\-]?(\d{2})[\s.\-]?(\d{2})(?:\s+|$)(.*)$/);
+  if (!m) return null;
+  let rest = m[4].trim(), amount = '';
+  const a = rest.match(/^(.*?)\s+\$?\s*(-?[\d,]+(?:\.\d+)?)$/);
+  if (a && (/[,.]/.test(a[2]) || /\t/.test(rest) || /\$/.test(rest))) { rest = a[1]; amount = num(a[2]) == null ? '' : String(num(a[2])); }
+  return { code: m[1] + '-' + m[2] + '-' + m[3], desc: rest.replace(/\s+/g, ' ').replace(/^\*+/, '').trim(), amount: amount };
+}
+let _libKey = null, _lib = [];
+function library() {
+  if (_libKey !== S.settings.costCodes) { _libKey = S.settings.costCodes; _lib = String(_libKey || '').split(/\n/).map(parseCodeLine).filter(Boolean); }
+  return _lib;
+}
+const divOf = code => String(code || '').slice(0, 2);
+const divName = d => d + ' – ' + (DIVS[d] || 'Division ' + d);
+const budgetRows = project => S.budget.filter(b => lc(b.project) === lc(project));
+const pkgCodes = p => String((p && p.costCodes) || '').split(/[,;\s]+/).filter(Boolean);
+function codeInfo(code, project) {
+  const b = budgetRows(project).find(r => r.code === code);
+  const l = library().find(r => r.code === code);
+  return { code: code, desc: (b && b.description) || (l && l.desc) || '', budget: b ? num(b.amount) : null };
+}
+function pkgBudget(p) {
+  const vals = pkgCodes(p).map(c => codeInfo(c, p.project).budget).filter(v => v != null);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+}
+function codeOptions(project) {
+  const map = {};
+  library().forEach(l => { map[l.code] = { code: l.code, desc: l.desc, budget: null }; });
+  budgetRows(project).forEach(b => { map[b.code] = { code: b.code, desc: b.description || (map[b.code] || {}).desc || '', budget: num(b.amount) }; });
+  return Object.keys(map).sort().map(k => map[k]);
+}
+function varHtml(low, budget) {
+  if (low == null || budget == null || !budget) return '';
+  const d = low - budget, pct = Math.abs(d / budget * 100).toFixed(1), over = d > 0;
+  return '<span class="var ' + (over ? 'over' : 'under') + '">' + (over ? '+' : '−') + money(Math.abs(d)) + ' (' + (over ? '+' : '−') + pct + '%) vs budget</span>';
+}
+const codeTags = p => pkgCodes(p).map(c => '<span class="code" title="' + esc(codeInfo(c, p.project).desc) + '">' + esc(c) + '</span>').join(' ');
+
+/* ============================ backend ============================ */
+const HAS_GAS = typeof google !== 'undefined' && google.script && google.script.run;
+const REMOTE = !HAS_GAS && /^https:\/\/script\.google(usercontent)?\.com\//.test(API_URL);
+const TOKEN_KEY = 'pcg-bid-manager-token';
+
+function getToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return memToken; }
+}
+let memToken = '';
+function setToken(t, remember) {
+  memToken = t || '';
+  try {
+    localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY);
+    if (t) (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, t);
+  } catch (e) { /* storage blocked: keep it in memory for this visit */ }
+}
+
+function remote(body) {
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' })
+    .catch(() => { throw new Error('Couldn\'t reach the bid manager service. Check your internet connection and try again.'); })
+    .then(r => r.text())
+    .then(t => {
+      let j;
+      try { j = JSON.parse(t); } catch (e) {
+        throw new Error('The bid manager service sent back something unexpected. In Apps Script, check the web app is deployed with "Who has access: Anyone".');
+      }
+      if (j.ok) return j.result;
+      const err = new Error(j.error || 'Something went wrong.');
+      if (j.auth) err.auth = true;
+      throw err;
+    });
+}
+
+function call(fn) {
+  const args = Array.prototype.slice.call(arguments, 1);
+  if (REMOTE) {
+    return remote({ fn: fn, args: args, token: getToken() }).catch(e => {
+      if (e.auth) { setToken(''); showLogin('Your session ended. Please sign in again.'); }
+      throw e;
+    });
+  }
+  return new Promise((resolve, reject) => {
+    if (HAS_GAS) {
+      const r = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+      r[fn].apply(r, args);
+    } else {
+      setTimeout(() => { try { resolve(Mock[fn].apply(null, args)); } catch (e) { reject(e); } }, 150);
+    }
+  });
+}
+
+/* ---------- sign-in screen (website copy only) ---------- */
+function showLogin(msg) {
+  closeModal();
+  app.innerHTML = '<div class="login-wrap"><form class="card login" id="login-form" autocomplete="on">' +
+    '<div class="brand" style="margin-bottom:18px"><span class="logo" style="background:var(--navy);color:#fff">PCG</span><div><b style="font-size:18px">Bid Manager</b><small class="muted"> v' + VERSION + '</small></div></div>' +
+    (msg ? '<div class="err-box" style="background:var(--info-bg);color:var(--info)">' + esc(msg) + '</div>' : '') +
+    '<input type="text" name="username" autocomplete="username" value="PCG Bid Manager" hidden>' +
+    '<div class="field"><label for="login-pw">Password</label><input type="password" id="login-pw" autocomplete="current-password" required></div>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:14px"><input type="checkbox" id="login-keep" checked> Keep me signed in on this device for 30 days</label>' +
+    '<button class="btn primary" style="width:100%;justify-content:center" id="login-btn">Sign in</button>' +
+    '<p class="muted" style="font-size:12px;margin:14px 0 0">Forgot the password? It\'s set in the Apps Script project under Project Settings → Script Properties → APP_PASSWORD.</p>' +
+    '</form></div>';
+  setTimeout(() => { const f = $('#login-pw'); if (f) f.focus(); }, 30);
+  $('#login-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const btn = $('#login-btn'), pw = $('#login-pw').value, keep = $('#login-keep').checked;
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    remote({ fn: 'login', password: pw, remember: keep }).then(r => {
+      setToken(r.token, keep);
+      load();
+    }).catch(err => {
+      btn.disabled = false; btn.textContent = 'Sign in';
+      let box = $('#login-form .err-box');
+      if (!box) { box = document.createElement('div'); box.className = 'err-box'; $('#login-form .brand').after(box); }
+      box.style.cssText = '';
+      box.textContent = errMsg(err);
+      $('#login-pw').select();
+    });
+  });
+}
+function signOut() {
+  setToken('');
+  S = { subs: [], packages: [], invites: [], budget: [], settings: {}, quota: null, dbUrl: '', demo: false, ms: {} };
+  showLogin('You\'re signed out.');
+}
+
+let pending = 0;
+function save(fn) {
+  pending++; showSaving();
+  return call.apply(null, arguments).then(
+    r => { pending--; showSaving(); return r; },
+    e => { pending--; showSaving(); toast('Could not save: ' + errMsg(e), 'err'); return null; });
+}
+function showSaving() {
+  const el = $('#saving');
+  if (el) el.textContent = pending ? 'Saving…' : 'All changes saved';
+}
+
+/* Demo mode: used only when the file is opened outside Google Apps Script */
+const Mock = (function () {
+  const KEY = 'pcg-bid-manager-demo';
+  let db = null;
+  try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* no storage */ }
+  if (!db) db = seed();
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { /* ignore */ } }
+  function seed() {
+    const d = new Date(Date.now() + 4 * 864e5);
+    const due = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T14:00';
+    const sent = new Date(Date.now() - 6 * 864e5).toISOString();
+    const subs = [
+      ['s1', 'Sample Drywall Co', 'Drywall, Framing', 'Mike Reynolds', 'mike@example.com', '770-555-0142'],
+      ['s2', 'Example Interiors', 'Drywall, Acoustical Ceilings', 'Dana Cole', 'dana@example.com', '678-555-0199'],
+      ['s3', 'Demo Framing LLC', 'Framing, Trusses', 'Luis Ortega', 'luis@example.com', ''],
+      ['s4', 'Test Plumbing Inc', 'Plumbing', 'Sam Lee', 'sam@example.com', '404-555-0110'],
+      ['s5', 'Placeholder Electric', 'Electrical, Low Voltage', 'Kim Tran', 'kim@example.com', ''],
+      ['s6', 'Sample Wall Systems', 'Drywall', 'Ray Burns', 'ray@example.com', '']
+    ].map(r => ({ id: r[0], company: r[1], trades: r[2], contact: r[3], email: r[4], phone: r[5], notes: '', active: 'Y', created: '' }));
+    const inv = (id, sid, status, amount, recv, notes) => {
+      const s = subs.find(x => x.id === sid);
+      return { id: id, packageId: 'p1', subId: sid, company: s.company, contact: s.contact, email: s.email, status: status,
+        sentAt: status === 'Not Sent' ? '' : sent, remindedAt: '', reminders: '0', amount: amount, receivedAt: recv, notes: notes || '' };
+    };
+    return {
+      Subs: subs,
+      Packages: [
+        { id: 'p1', project: 'Sample Hotel', name: 'Drywall & Framing', trades: 'Drywall, Framing', due: due, plansLink: 'https://example.com/plans',
+          scope: 'Furnish and install metal stud framing, drywall, tape and finish per plans and specs. Include all labor, material, equipment and cleanup.',
+          status: 'Out to Bid', notes: '', created: '', costCodes: '09-29-00, 09-21-16' },
+        { id: 'p2', project: 'Sample Hotel', name: 'Plumbing', trades: 'Plumbing', due: '', plansLink: '', scope: '', status: 'Draft', notes: '', created: '', costCodes: '22-01-00' }
+      ],
+      Invites: [
+        inv('i1', 's1', 'Quote Received', '412500', today(), 'Excludes FRP'),
+        inv('i2', 's2', 'Will Bid', '', '', ''),
+        inv('i3', 's3', 'Quote Received', '398750', today(), 'Framing only'),
+        inv('i4', 's6', 'Not Sent', '', '', '')
+      ],
+      Budget: [
+        { id: 'b1', project: 'Sample Hotel', code: '09-29-00', description: 'Gypsum Wallboard', amount: '395000' },
+        { id: 'b2', project: 'Sample Hotel', code: '09-21-16', description: 'Shaft Walls', amount: '26965' },
+        { id: 'b3', project: 'Sample Hotel', code: '22-01-00', description: 'Plumbing', amount: '1085000' }
+      ],
+      Settings: {}
+    };
+  }
+  function tbl(t) { return db[t] || (db[t] = []); }
+  return {
+    apiLoad() {
+      return JSON.parse(JSON.stringify({ version: VERSION, subs: tbl('Subs'), packages: tbl('Packages'), invites: tbl('Invites'), budget: tbl('Budget'),
+        settings: db.Settings || {}, quota: 100, dbUrl: '', demo: true, ms: Mock.apiMsStatus() }));
+    },
+    apiSave(t, recs) {
+      const a = tbl(t);
+      recs.forEach(r => { const i = a.findIndex(x => x.id === r.id); if (i >= 0) a[i] = Object.assign({}, r); else a.push(Object.assign({}, r)); });
+      persist(); return true;
+    },
+    apiDelete(t, ids) {
+      const set = new Set(ids);
+      if (t === 'Packages') db.Invites = tbl('Invites').filter(i => !set.has(i.packageId));
+      db[t] = tbl(t).filter(r => !set.has(r.id));
+      persist(); return true;
+    },
+    apiSaveSettings(o) { db.Settings = Object.assign({}, db.Settings, o); persist(); return true; },
+    apiSend(msgs, kind) {
+      const now = new Date().toISOString(), updated = [];
+      msgs.forEach(m => {
+        const inv = tbl('Invites').find(i => i.id === m.inviteId);
+        if (!inv) return;
+        if (kind === 'invite') { if (inv.status === 'Not Sent') inv.status = 'Invited'; inv.sentAt = now; }
+        else { inv.remindedAt = now; inv.reminders = String((+inv.reminders || 0) + 1); }
+        updated.push(Object.assign({}, inv));
+      });
+      persist();
+      return { sent: updated.map(i => i.id), failed: [], invites: updated, quota: 100 };
+    },
+    apiMsStatus() {
+      const m = db.Ms || {};
+      return { tenant: m.tenant || '', clientId: m.clientId || '', hasSecret: !!m.secret, redirectUri: 'https://script.google.com/macros/d/DEMO_SCRIPT_ID/usercallback',
+        configured: !!(m.tenant && m.clientId && m.secret), connected: !!m.connected, email: m.connected ? 'you@yourcompany.com' : '', name: '', authUrl: '#demo-sign-in' };
+    },
+    apiMsSaveConfig(c) { db.Ms = Object.assign({}, db.Ms, { tenant: c.tenant, clientId: c.clientId }, c.secret ? { secret: c.secret } : {}); persist(); return Mock.apiMsStatus(); },
+    apiMsDisconnect() { db.Ms = Object.assign({}, db.Ms, { connected: false }); persist(); return Mock.apiMsStatus(); },
+    apiMsTest() { return 'you@yourcompany.com'; },
+    demoConnect() { db.Ms = Object.assign({}, db.Ms, { connected: true }); persist(); },
+    reset() { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } db = seed(); }
+  };
+})();
+
+/* ============================ state ============================ */
+let S = { subs: [], packages: [], invites: [], budget: [], settings: {}, quota: null, dbUrl: '', demo: false, ms: {} };
+const view = { tab: 'packages', pkgId: null, search: '', subSearch: '', pkgFilter: 'active', pkgDiv: '', pkgProject: '', subTrade: '', selected: new Set() };
+
+const pkgById = id => S.packages.find(p => p.id === id);
+const subById = id => S.subs.find(s => s.id === id);
+const invById = id => S.invites.find(i => i.id === id);
+const invitesFor = pid => S.invites.filter(i => i.packageId === pid);
+
+function stats(pid) {
+  const inv = invitesFor(pid);
+  const amts = inv.map(i => num(i.amount)).filter(n => n != null);
+  return {
+    total: inv.length,
+    invited: inv.filter(i => i.status && i.status !== 'Not Sent').length,
+    will: inv.filter(i => i.status === 'Will Bid').length,
+    no: inv.filter(i => i.status === 'No Bid').length,
+    quotes: amts.length,
+    low: amts.length ? Math.min.apply(null, amts) : null,
+    high: amts.length ? Math.max.apply(null, amts) : null
+  };
+}
+
+/* ---------- sending account ---------- */
+const viaMs = () => S.settings.sendVia === 'microsoft';
+const msReady = () => viaMs() && S.ms && S.ms.connected;
+function senderLine() {
+  if (viaMs()) return S.ms && S.ms.connected ? 'Sending as ' + S.ms.email : 'Outlook not connected';
+  return S.quota != null ? S.quota + ' emails left today' : '';
+}
+
+/* ---------- projects (one plans link per project) ---------- */
+function projects() {
+  try { const o = JSON.parse(S.settings.projects || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; }
+}
+function projectNames() {
+  const map = {};
+  const add = n => { n = String(n || '').trim(); if (n && !map[lc(n)]) map[lc(n)] = n; };
+  const pr = projects();
+  Object.keys(pr).forEach(k => add(pr[k].name));
+  S.packages.forEach(p => add(p.project));
+  S.budget.forEach(b => add(b.project));
+  return Object.keys(map).map(k => map[k]).sort((a, b) => a.localeCompare(b));
+}
+function projectSelect(id, current, allowNew) {
+  const names = projectNames();
+  const cur = names.find(n => lc(n) === lc(current)) || '';
+  return '<select id="' + id + '" data-change="proj-pick">' +
+    (cur || !names.length ? '' : '<option value="">Choose a project…</option>') +
+    names.map(n => '<option' + (n === cur ? ' selected' : '') + '>' + esc(n) + '</option>').join('') +
+    (allowNew ? '<option value="__new"' + (!names.length ? ' selected' : '') + '>+ New project…</option>' : '') + '</select>';
+}
+function saveProjectsMap(all) {
+  S.settings.projects = JSON.stringify(all);
+  save('apiSaveSettings', { projects: S.settings.projects });
+}
+function renameProject(oldName, newName) {
+  const pkgs = S.packages.filter(p => lc(p.project) === lc(oldName));
+  pkgs.forEach(p => { p.project = newName; });
+  if (pkgs.length) save('apiSave', 'Packages', pkgs);
+  const buds = S.budget.filter(b => lc(b.project) === lc(oldName));
+  buds.forEach(b => { b.project = newName; });
+  if (buds.length) save('apiSave', 'Budget', buds);
+  const all = projects();
+  const from = all[lc(oldName)] || { plansLink: '' };
+  const into = all[lc(newName)];
+  delete all[lc(oldName)];
+  all[lc(newName)] = { name: newName, plansLink: (into && into.plansLink) || from.plansLink || '' };
+  saveProjectsMap(all);
+  if (lc(view.pkgProject) === lc(oldName)) view.pkgProject = newName;
+  return pkgs.length;
+}
+function openProjectModal(name) {
+  const isNew = !name;
+  PM.old = name || '';
+  openModal(isNew ? 'New project' : 'Rename project',
+    '<div class="field"><label>Project name</label><input type="text" id="pj-name" value="' + esc(name || '') + '" placeholder="e.g. Home2 Suites Douglasville"></div>' +
+    (isNew ? '<div class="field"><label>Plans &amp; specs link <span class="hint">optional, shared by every bid package on this project</span></label>' +
+      '<input type="url" id="pj-plans" placeholder="https://…"></div>'
+      : '<p class="muted" style="font-size:13px;margin:0">Renaming updates all ' + S.packages.filter(p => lc(p.project) === lc(name)).length +
+        ' bid package(s) and the budget for this project.</p>'),
+    '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="m-save-proj">' + (isNew ? 'Add project' : 'Rename') + '</button>');
+}
+const PM = { old: '' };
+function saveProjectFromModal() {
+  const name = $('#pj-name').value.trim().replace(/\s+/g, ' ');
+  if (!name) return modalErr('Enter a project name.');
+  const clash = projectNames().find(n => lc(n) === lc(name) && lc(n) !== lc(PM.old));
+  if (!PM.old) {
+    if (clash) return modalErr('There\'s already a project called "' + clash + '".');
+    const link = ($('#pj-plans').value || '').trim();
+    if (link && !/^https?:\/\//i.test(link)) return modalErr('The plans link should start with https://');
+    const all = projects();
+    all[lc(name)] = { name: name, plansLink: link };
+    saveProjectsMap(all);
+    closeModal(); render(); toast('Project added', 'ok');
+    return;
+  }
+  if (name === PM.old) return closeModal();
+  const go = () => { const n = renameProject(PM.old, name); closeModal(); render(); toast('Renamed. ' + n + ' package(s) updated.', 'ok'); };
+  if (clash) {
+    ask('Merge projects?', '"' + clash + '" already exists. Renaming will combine "' + PM.old + '" into it, including packages and budget lines.', 'Merge', true).then(ok => { if (ok) go(); });
+  } else go();
+}
+function removeProject(name) {
+  const all = projects();
+  delete all[lc(name)];
+  saveProjectsMap(all);
+  render();
+}
+
+const projectPlans = name => { const pr = projects()[lc(name)]; return pr && pr.plansLink ? pr.plansLink : ''; };
+const plansFor = p => projectPlans(p.project) || String(p.plansLink || '').trim();
+function setProjectPlans(name, link) {
+  if (!name) return;
+  const all = projects();
+  all[lc(name)] = { name: name.trim(), plansLink: link };
+  S.settings.projects = JSON.stringify(all);
+  save('apiSaveSettings', { projects: S.settings.projects });
+}
+
+/* ---------- email formatting: **bold**  _italic_  __underline__  - bullets ---------- */
+const LOGO_TOKEN = '[[LOGO]]';
+function mdInline(h) {
+  const links = [];
+  h = h.replace(/https?:\/\/[^\s<]+/g, u => { links.push(u); return '\u0001' + (links.length - 1) + '\u0001'; });
+  h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/__(.+?)__/g, '<u>$1</u>')
+    .replace(/(^|[^\w])_([^_\s](?:[^_]*?[^_\s])?)_(?=$|[^\w])/g, '$1<i>$2</i>');
+  return h.replace(/\u0001(\d+)\u0001/g, (m, i) => '<a href="' + links[i] + '">' + links[i] + '</a>');
+}
+function logoImg(src) {
+  if (!src || !S.settings.logo) return '';
+  const w = Math.max(40, Math.min(600, parseInt(S.settings.logoWidth, 10) || 180));
+  return '<img src="' + src + '" alt="' + esc(S.settings.companyName || 'Logo') + '" width="' + w + '" style="display:block;width:' + w + 'px;max-width:100%;height:auto;margin-top:6px;border:0">';
+}
+function toEmailHtml(text, logoSrc) {
+  const out = [];
+  let inList = false;
+  String(text || '').split(/\r?\n/).forEach(line => {
+    const b = line.match(/^\s*[-•]\s+(.*)$/);
+    if (b) {
+      if (!inList) { out.push('<ul style="margin:4px 0 4px 22px;padding:0">'); inList = true; }
+      out.push('<li>' + mdInline(esc(b[1])) + '</li>');
+      return;
+    }
+    if (inList) { out.push('</ul>'); inList = false; }
+    if (line.trim() === LOGO_TOKEN) { out.push(logoImg(logoSrc)); return; }
+    out.push(mdInline(esc(line)) + '<br>');
+  });
+  if (inList) out.push('</ul>');
+  return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#222">' +
+    out.join('').split(LOGO_TOKEN).join(logoImg(logoSrc)) + '</div>';
+}
+function toPlain(text) {
+  return String(text || '').split(/\r?\n/).filter(l => l.trim() !== LOGO_TOKEN).join('\n')
+    .split(LOGO_TOKEN).join('')
+    .replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1')
+    .replace(/(^|[^\w])_([^_\s](?:[^_]*?[^_\s])?)_(?=$|[^\w])/gm, '$1$2')
+    .replace(/^(\s*)-\s+/gm, '$1• ');
+}
+function fmtBar(id) {
+  return '<div class="fmt-bar"><button type="button" class="fb" data-act="fmt" data-k="b" data-t="' + id + '" title="Bold (Ctrl+B)"><b>B</b></button>' +
+    '<button type="button" class="fb" data-act="fmt" data-k="i" data-t="' + id + '" title="Italic (Ctrl+I)"><i>I</i></button>' +
+    '<button type="button" class="fb" data-act="fmt" data-k="u" data-t="' + id + '" title="Underline (Ctrl+U)"><u>U</u></button>' +
+    '<button type="button" class="fb" data-act="fmt" data-k="list" data-t="' + id + '" title="Bulleted list">• List</button>' +
+    '<span class="ph">**bold** &nbsp;_italic_ &nbsp;__underline__ &nbsp;- bullet</span></div>';
+}
+
+function fill(tpl, p, inv, noSig) {
+  const st = S.settings;
+  const sig = (st.signature || '').trim() || [st.senderName, st.companyName].filter(Boolean).join('\n');
+  const map = {
+    contact: (inv && inv.contact && inv.contact.trim()) || 'there',
+    firstName: (inv && inv.contact && inv.contact.trim().split(/\s+/)[0]) || 'there',
+    company: (inv && inv.company) || '',
+    project: p.project || '',
+    package: p.name || '',
+    trades: p.trades || '',
+    due: fmtDue(p.due) || 'TBD',
+    dueShort: fmtShort(p.due) || 'TBD',
+    scope: (p.scope || '').trim() || 'See plans and specs.',
+    plans: plansFor(p) || '(to follow)',
+    logo: st.logo && !noSig ? LOGO_TOKEN : '',
+    notes: p.notes || '',
+    sender: st.senderName || '',
+    companyName: st.companyName || '',
+    signature: noSig ? '' : sig + (st.logo && !/\{logo\}/.test(tpl || '') ? '\n' + LOGO_TOKEN : '')
+  };
+  return String(tpl || '').replace(/\{(\w+)\}/g, (m, k) => (k in map ? map[k] : m));
+}
+
+/* ============================ render ============================ */
+const app = document.getElementById('app');
+
+function render() {
+  const ae = document.activeElement;
+  const key = ae && ae.dataset ? ae.dataset.key : null;
+  let caret = null;
+  try { caret = ae && typeof ae.selectionStart === 'number' ? ae.selectionStart : null; } catch (e) { /* n/a */ }
+
+  let body = '';
+  if (view.tab === 'package' && pkgById(view.pkgId)) body = viewPackage(pkgById(view.pkgId));
+  else if (view.tab === 'subs') body = viewSubs();
+  else if (view.tab === 'settings') body = viewSettings();
+  else { view.tab = 'packages'; body = viewPackages(); }
+
+  app.innerHTML = topBar() + '<main>' + body + '</main>';
+
+  if (key) {
+    const el = document.querySelector('[data-key="' + CSS.escape(key) + '"]');
+    if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) { /* n/a */ } }
+  }
+  showSaving();
+}
+function renderSoon() { setTimeout(render, 0); }
+
+function topBar() {
+  const tabs = [['packages', 'Bid Packages'], ['subs', 'Subcontractors'], ['settings', 'Settings']];
+  const active = view.tab === 'package' ? 'packages' : view.tab;
+  return '<header class="top"><div class="brand"><span class="logo">PCG</span><div><b>Bid Manager</b><small>v' + VERSION + '</small></div></div>' +
+    '<nav>' + tabs.map(t => '<button class="nav' + (active === t[0] ? ' on' : '') + '" data-act="tab" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</nav>' +
+    '<div class="top-right"><span id="saving"></span>' + (senderLine() ? '<span>' + esc(senderLine()) + '</span>' : '') +
+    (REMOTE ? '<button class="nav" style="padding:5px 10px;font-size:12px" data-act="sign-out">Sign out</button>' : '') + '</div></header>' +
+    (S.demo ? '<div class="demo">Demo mode: this copy is running outside Google, so data stays in this browser and no emails are sent. ' +
+      '<a href="#" data-act="reset-demo" target="_self">Reset demo data</a></div>' : '');
+}
+
+function statusPill(s) {
+  s = s || 'Draft';
+  const c = { 'Draft': 'p-draft', 'Out to Bid': 'p-out', 'Leveling': 'p-level', 'Awarded': 'p-awarded', 'Closed': 'p-closed' }[s] || 'p-draft';
+  return '<span class="pill ' + c + '">' + esc(s) + '</span>';
+}
+function chips(trades) { return splitTrades(trades).map(t => '<span class="chip">' + esc(t) + '</span>').join(''); }
+
+function dueCell(p) {
+  if (!p.due) return '<span class="muted">No due date</span>';
+  const d = daysLeft(p.due);
+  const date = fmtDue(p.due).replace(/, \d{4}/, '');
+  if (!ACTIVE_PKG.includes(p.status || 'Draft')) return '<div class="due later">' + esc(date) + '</div>';
+  let k = 'later', label = 'in ' + d + ' days';
+  if (d < 0) { k = 'late'; label = 'Past due'; }
+  else if (d === 0) { k = 'today'; label = 'Due today'; }
+  else if (d === 1) { k = 'soon'; label = 'Tomorrow'; }
+  else if (d <= 3) { k = 'soon'; }
+  return '<div class="due ' + k + '">' + esc(date) + '<small>' + label + '</small></div>';
+}
+
+/* ---------- Packages list ---------- */
+function viewPackages() {
+  const q = lc(view.search);
+  const f = view.pkgFilter;
+  const list = S.packages.filter(p => {
+    const st = p.status || 'Draft';
+    if (f === 'active' && !ACTIVE_PKG.includes(st)) return false;
+    if (f === 'awarded' && st !== 'Awarded') return false;
+    if (f === 'closed' && st !== 'Closed') return false;
+    if (view.pkgDiv && !pkgCodes(p).some(c => divOf(c) === view.pkgDiv)) return false;
+    if (view.pkgProject && lc(p.project) !== lc(view.pkgProject)) return false;
+    if (q && !lc([p.project, p.name, p.trades, p.notes, p.costCodes, pkgCodes(p).map(c => codeInfo(c, p.project).desc).join(' ')].join(' ')).includes(q)) return false;
+    return true;
+  }).sort((a, b) => {
+    const da = parseLocal(a.due), db = parseLocal(b.due);
+    return (da ? da.getTime() : 9e15) - (db ? db.getTime() : 9e15) || lc(a.project).localeCompare(lc(b.project));
+  });
+
+  const filters = [['active', 'Active'], ['awarded', 'Awarded'], ['closed', 'Closed'], ['all', 'All']];
+  let html = '<div class="bar"><h1>Bid Packages</h1>' +
+    '<input type="search" class="search" placeholder="Search project, package, trade…" data-input="search" data-key="pkg-search" value="' + esc(view.search) + '">' +
+    (projectNames().length > 1 || view.pkgProject ? '<select style="width:auto" data-change="pkg-project" data-key="pkg-project"><option value="">All projects</option>' +
+      projectNames().map(n => '<option' + (lc(n) === lc(view.pkgProject) ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>' : '') +
+    (function () {
+      const divs = Array.from(new Set([].concat.apply([], S.packages.map(p => pkgCodes(p).map(divOf))))).sort();
+      return divs.length ? '<select style="width:auto" data-change="pkg-div" data-key="pkg-div"><option value="">All divisions</option>' +
+        divs.map(d => '<option value="' + d + '"' + (view.pkgDiv === d ? ' selected' : '') + '>' + esc(divName(d)) + '</option>').join('') + '</select>' : '';
+    })() +
+    '<div class="seg">' + filters.map(x => '<button class="' + (f === x[0] ? 'on' : '') + '" data-act="pkg-filter" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+    '<button class="btn primary" data-act="new-pkg">+ New bid package</button></div>';
+
+  if (!S.packages.length) {
+    return html + '<div class="card empty"><b>No bid packages yet</b>Create one for each scope you are pricing, like "Drywall & Framing" on a hotel job.<br><br>' +
+      '<button class="btn primary" data-act="new-pkg">+ New bid package</button></div>';
+  }
+  if (!list.length) return html + '<div class="card empty">No packages match.</div>';
+
+  html += '<div class="card tbl-wrap"><table><thead><tr><th>Package</th><th class="hide-sm">Cost codes</th><th class="hide-sm">Trades</th><th>Due</th>' +
+    '<th class="num">Quotes</th><th class="num">Low quote</th><th>Status</th></tr></thead><tbody>';
+  list.forEach(p => {
+    const st = stats(p.id);
+    html += '<tr class="click" data-act="open-pkg" data-id="' + esc(p.id) + '">' +
+      '<td><div class="t1">' + esc(p.name) + '</div><div class="t2">' + esc(p.project) + '</div></td>' +
+      '<td class="hide-sm">' + (codeTags(p) || '<span class="muted">—</span>') + '</td>' +
+      '<td class="hide-sm">' + chips(p.trades) + '</td>' +
+      '<td>' + dueCell(p) + '</td>' +
+      '<td class="num">' + st.quotes + ' <span class="muted">of ' + st.invited + '</span></td>' +
+      '<td class="num">' + (st.low != null ? '<b>' + money(st.low) + '</b>' + varHtml(st.low, pkgBudget(p)) : (pkgBudget(p) != null ? '<span class="muted">Budget ' + money(pkgBudget(p)) + '</span>' : '<span class="muted">—</span>')) + '</td>' +
+      '<td>' + statusPill(p.status) + '</td></tr>';
+  });
+  return html + '</tbody></table></div>';
+}
+
+/* ---------- Package detail ---------- */
+function sortedBidders(pid) {
+  return invitesFor(pid).slice().sort((a, b) => {
+    const na = num(a.amount), nb = num(b.amount);
+    if (na != null && nb != null) return na - nb;
+    if (na != null) return -1;
+    if (nb != null) return 1;
+    return INV_ST.indexOf(a.status) - INV_ST.indexOf(b.status) || lc(a.company).localeCompare(lc(b.company));
+  });
+}
+function inviteTargets(p) {
+  const inv = invitesFor(p.id), sel = inv.filter(i => view.selected.has(i.id));
+  return sel.length ? sel : inv.filter(i => !i.status || i.status === 'Not Sent');
+}
+function reminderTargets(p) {
+  const inv = invitesFor(p.id), sel = inv.filter(i => view.selected.has(i.id));
+  return sel.length ? sel : inv.filter(i => (i.status === 'Invited' || i.status === 'Will Bid') && num(i.amount) == null);
+}
+
+function viewPackage(p) {
+  const st = stats(p.id);
+  const rows = sortedBidders(p.id);
+  const lowId = st.quotes ? (rows.find(r => num(r.amount) === st.low) || {}).id : null;
+  const spread = st.quotes > 1 && st.low ? Math.round((st.high - st.low) / st.low * 100) + '%' : '—';
+  const budget = pkgBudget(p), codes = pkgCodes(p);
+  const nInv = inviteTargets(p).length, nRem = reminderTargets(p).length, nSel = view.selected.size;
+
+  let html = '<button class="back" data-act="tab" data-tab="packages">← All bid packages</button>' +
+    '<div class="head"><div><h1>' + esc(p.name) + '</h1><div class="sub">' + esc(p.project) + '</div></div>' +
+    '<div class="acts"><select data-change="pkg-status" data-key="pkg-status">' +
+    PKG_ST.map(s => '<option' + ((p.status || 'Draft') === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select>' +
+    '<button class="btn" data-act="edit-pkg">Edit</button><button class="btn danger" data-act="del-pkg">Delete</button></div></div>';
+
+  html += '<div class="card pad"><div class="info">' +
+    '<div><label>Quotes due</label>' + (p.due ? dueCell(p) : '<span class="muted">Not set</span>') + '</div>' +
+    '<div><label>Trades</label>' + (chips(p.trades) || '<span class="muted">None</span>') + '</div>' +
+    '<div><label>Plans &amp; specs <span style="text-transform:none;letter-spacing:0">(project)</span></label>' + (plansFor(p) ? '<a class="btn small" href="' + esc(plansFor(p)) + '" target="_blank" rel="noopener">Open plans ↗</a>' : '<span class="muted">No link yet. <a href="#" target="_self" data-act="edit-pkg">Add</a></span>') + '</div>' +
+    '<div><label>Cost codes</label>' + (codes.length ? '<div class="codes-list">' + codes.map(c => { const ci = codeInfo(c, p.project);
+      return '<div><span class="code">' + esc(c) + '</span> ' + esc(ci.desc) + (ci.budget != null ? ' <span class="muted">· ' + money(ci.budget) + '</span>' : '') + '</div>'; }).join('') + '</div>'
+      : '<span class="muted">None. <a href="#" target="_self" data-act="edit-pkg">Assign</a></span>') + '</div>' +
+    '</div>' +
+    (p.scope ? '<div style="margin-top:14px"><div class="info"><div style="grid-column:1/-1"><label>Scope</label><p class="scope">' + esc(p.scope) + '</p></div></div></div>' : '') +
+    (p.notes ? '<div style="margin-top:12px"><div class="info"><div style="grid-column:1/-1"><label>Internal notes</label><p class="scope">' + esc(p.notes) + '</p></div></div></div>' : '') +
+    '</div>';
+
+  html += '<div class="stats">' +
+    '<div class="stat"><span>Invited</span><b>' + st.invited + '</b></div>' +
+    '<div class="stat"><span>Will bid</span><b>' + st.will + '</b></div>' +
+    '<div class="stat"><span>No bid</span><b>' + st.no + '</b></div>' +
+    '<div class="stat"><span>Quotes in</span><b>' + st.quotes + '</b></div>' +
+    '<div class="stat low"><span>Low quote</span><b>' + (st.low != null ? money(st.low) : '—') + '</b></div>' +
+    '<div class="stat"><span>Spread</span><b>' + spread + '</b></div>' +
+    '<div class="stat"><span>Budget</span><b>' + (budget != null ? money(budget) : '—') + '</b></div>' +
+    '<div class="stat"><span>Low vs budget</span><b>' + (st.low != null && budget ? '<em style="font-style:normal;color:' + (st.low > budget ? 'var(--bad)' : 'var(--ok)') + '">' +
+      (st.low > budget ? '+' : '−') + Math.abs((st.low - budget) / budget * 100).toFixed(1) + '%</em>' : '—') + '</b>' +
+      (st.low != null && budget ? '<span>' + (st.low > budget ? 'over' : 'under') + ' by ' + money(Math.abs(st.low - budget)) + '</span>' : '') + '</div></div>';
+
+  html += '<div class="card"><div class="section-bar"><h2>Bidders' + (nSel ? ' <span class="muted" style="font-weight:500;font-size:13px">· ' + nSel + ' selected</span>' : '') + '</h2>' +
+    '<button class="btn" data-act="add-bidders">+ Add bidders</button>' +
+    '<button class="btn primary" data-act="send" data-kind="invite"' + (nInv ? '' : ' disabled') + '>Send invites (' + nInv + ')</button>' +
+    '<button class="btn" data-act="send" data-kind="reminder"' + (nRem ? '' : ' disabled') + '>Send reminder (' + nRem + ')</button>' +
+    '<button class="btn" data-act="copy-tab"' + (rows.length ? '' : ' disabled') + '>Copy bid tab</button></div>';
+
+  if (!rows.length) {
+    html += '<div class="empty"><b>No bidders yet</b>Add subs from your directory, then send invites.<br><br>' +
+      '<button class="btn primary" data-act="add-bidders">+ Add bidders</button></div></div>';
+    return html;
+  }
+
+  const allSel = rows.every(r => view.selected.has(r.id));
+  html += '<div class="tbl-wrap"><table class="bidders"><thead><tr>' +
+    '<th style="width:30px"><input type="checkbox" data-change="sel-all"' + (allSel ? ' checked' : '') + ' title="Select all"></th>' +
+    '<th>Subcontractor</th><th>Status</th><th class="num">Quote</th><th>Received</th><th>Notes</th><th></th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const sub = subById(r.subId) || {};
+    const isLow = r.id === lowId;
+    const sent = [r.sentAt ? 'Invited ' + fmtStamp(r.sentAt) : '', r.remindedAt ? 'Reminded ' + fmtStamp(r.remindedAt) + (+r.reminders > 1 ? ' (' + r.reminders + '×)' : '') : '']
+      .filter(Boolean).join(' · ');
+    html += '<tr class="' + (isLow ? 'low' : '') + (r.status === 'No Bid' ? ' dim' : '') + '">' +
+      '<td><input type="checkbox" data-change="sel" data-id="' + esc(r.id) + '"' + (view.selected.has(r.id) ? ' checked' : '') + '></td>' +
+      '<td><div class="t1">' + esc(r.company) + (isLow ? '<span class="tag-low">LOW</span>' : '') + '</div>' +
+      '<div class="t2">' + esc(r.contact || '') + (r.contact && r.email ? ' · ' : '') + (r.email ? esc(r.email) : '<span style="color:var(--bad)">no email</span>') +
+      (sub.phone ? ' · ' + esc(sub.phone) : '') + '</div>' + (sent ? '<div class="t3">' + sent + '</div>' : '') + '</td>' +
+      '<td><select class="s-' + cls(r.status || 'Not Sent') + '" data-change="inv-status" data-id="' + esc(r.id) + '" data-key="st-' + esc(r.id) + '">' +
+      INV_ST.map(s => '<option' + ((r.status || 'Not Sent') === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></td>' +
+      '<td class="num"><input type="text" class="amt" inputmode="decimal" placeholder="$" data-change="inv-amount" data-id="' + esc(r.id) + '" data-key="amt-' + esc(r.id) + '" value="' + esc(plainNum(r.amount)) + '"></td>' +
+      '<td><input type="date" data-change="inv-date" data-id="' + esc(r.id) + '" data-key="dt-' + esc(r.id) + '" value="' + esc((r.receivedAt || '').slice(0, 10)) + '"></td>' +
+      '<td><input type="text" class="notes" placeholder="Exclusions, alternates…" data-change="inv-notes" data-id="' + esc(r.id) + '" data-key="nt-' + esc(r.id) + '" value="' + esc(r.notes) + '"></td>' +
+      '<td class="acts-cell">' + (r.email ? '<button class="icon-btn" title="Email in Outlook" data-act="outlook-one" data-id="' + esc(r.id) + '">✉</button>' : '') +
+      '<button class="icon-btn" title="Remove from this package" data-act="remove-inv" data-id="' + esc(r.id) + '">✕</button></td></tr>';
+  });
+  return html + '</tbody></table></div></div>';
+}
+
+/* ---------- Subs ---------- */
+function viewSubs() {
+  const q = lc(view.subSearch), tf = lc(view.subTrade);
+  const allTrades = splitTrades(tradeList().concat(S.subs.map(s => s.trades)).join(','));
+  const list = S.subs.filter(s => {
+    if (tf && !splitTrades(s.trades).map(lc).includes(tf)) return false;
+    if (q && !lc([s.company, s.contact, s.email, s.phone, s.trades, s.notes].join(' ')).includes(q)) return false;
+    return true;
+  }).sort((a, b) => lc(a.company).localeCompare(lc(b.company)));
+
+  let html = '<div class="bar"><h1>Subcontractors</h1>' +
+    '<input type="search" class="search" placeholder="Search name, contact, email…" data-input="sub-search" data-key="sub-search" value="' + esc(view.subSearch) + '">' +
+    '<select style="width:auto" data-change="sub-trade" data-key="sub-trade"><option value="">All trades</option>' +
+    allTrades.map(t => '<option' + (lc(t) === tf ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>' +
+    '<button class="btn" data-act="import-subs">Import (Outlook / Excel)</button>' +
+    '<button class="btn primary" data-act="new-sub">+ Add sub</button></div>';
+
+  if (!S.subs.length) {
+    return html + '<div class="card empty"><b>Your sub directory is empty</b>Add subs one at a time, or paste a list from Excel.<br><br>' +
+      '<button class="btn" data-act="import-subs">Import (Outlook / Excel)</button> <button class="btn primary" data-act="new-sub">+ Add sub</button></div>';
+  }
+  if (!list.length) return html + '<div class="card empty">No subs match.</div>';
+
+  html += '<div class="card tbl-wrap"><table><thead><tr><th>Company</th><th>Trades</th><th>Contact</th><th class="hide-sm">Phone</th><th class="num hide-sm">Bids</th><th></th></tr></thead><tbody>';
+  list.forEach(s => {
+    const inv = S.invites.filter(i => i.subId === s.id);
+    const quotes = inv.filter(i => num(i.amount) != null).length;
+    const inactive = s.active === 'N';
+    html += '<tr class="click' + (inactive ? ' dim' : '') + '" data-act="edit-sub" data-id="' + esc(s.id) + '">' +
+      '<td><div class="t1">' + esc(s.company) + (inactive ? ' <span class="chip">Inactive</span>' : '') + '</div>' + (s.notes ? '<div class="t3">' + esc(s.notes) + '</div>' : '') + '</td>' +
+      '<td>' + chips(s.trades) + '</td>' +
+      '<td><div>' + esc(s.contact) + '</div><div class="t2">' + (s.email ? esc(s.email) : '<span style="color:var(--bad)">no email</span>') + '</div></td>' +
+      '<td class="hide-sm">' + esc(s.phone) + '</td>' +
+      '<td class="num hide-sm">' + (inv.length ? quotes + ' <span class="muted">of ' + inv.length + '</span>' : '<span class="muted">—</span>') + '</td>' +
+      '<td class="acts-cell"><button class="icon-btn" title="Delete" data-act="del-sub" data-id="' + esc(s.id) + '">✕</button></td></tr>';
+  });
+  return html + '</tbody></table></div><p class="muted" style="font-size:13px">' + list.length + ' of ' + S.subs.length + ' subs</p>';
+}
+
+/* ---------- Settings ---------- */
+function viewSettings() {
+  const st = S.settings;
+  const f = (key, label, hint, type, rich) => '<div class="field"><label>' + label + (hint ? ' <span class="hint">' + hint + '</span>' : '') + '</label>' +
+    (type === 'area'
+      ? (rich ? fmtBar('set-' + key) : '') + '<textarea id="set-' + key + '"' + (rich ? ' class="rich"' : '') + ' rows="' + (key.indexOf('Body') >= 0 || key === 'costCodes' ? 12 : 4) + '" data-setting="' + key + '"' + (key === 'costCodes' ? ' style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"' : '') + '>' + esc(st[key]) + '</textarea>'
+      : '<input type="text" data-setting="' + key + '" value="' + esc(st[key]) + '">') + '</div>';
+  return '<div class="settings"><div class="bar"><h1>Settings</h1><button class="btn primary" data-act="save-settings">Save settings</button></div>' +
+    '<div class="card pad">' +
+    '<h2>Send email from</h2>' +
+    '<div class="seg" style="margin-bottom:12px"><button class="' + (viaMs() ? '' : 'on') + '" data-act="send-via" data-v="google">Google account</button>' +
+    '<button class="' + (viaMs() ? 'on' : '') + '" data-act="send-via" data-v="microsoft">Microsoft 365 (Outlook)</button></div>' +
+    (viaMs() ? msPanel() : '<p class="muted" style="margin:0 0 16px;font-size:13px">Emails go out through the Google account that runs this app, with your reply-to address below. ' +
+      'Switch to Microsoft 365 to send as your Outlook address, with copies in your Sent Items.</p>') +
+    '<h2>Email</h2>' +
+    '<div class="row2">' + f('companyName', 'Company name', '') + f('senderName', 'Your name', 'shown as the sender') + '</div>' +
+    '<div class="row2">' + f('replyTo', 'Reply-to address', viaMs() ? 'optional with Microsoft 365, since replies already come to you' : 'sub replies go here, e.g. your PCG Outlook') +
+    f('copyTo', 'Send me a copy at', 'optional, BCC on every email') + '</div>' +
+    f('signature', 'Signature', 'leave blank to use your name + company', 'area', true) +
+    '<div class="field"><label>Logo <span class="hint">appears under your signature in every email</span></label><div class="logo-row">' +
+    (st.logo ? '<img src="' + st.logo + '" alt="Logo">' : '<span class="muted">No logo yet</span>') +
+    '<label class="btn small" style="cursor:pointer">' + (st.logo ? 'Change logo' : 'Upload logo') + '<input type="file" accept="image/*" data-change="logo-file" hidden></label>' +
+    (st.logo ? '<button class="btn small danger" data-act="logo-remove">Remove</button>' +
+      '<label style="display:flex;gap:6px;align-items:center;font-size:13px">Width in email <input type="number" min="40" max="600" step="10" data-setting="logoWidth" value="' + esc(st.logoWidth || 180) + '" style="width:80px"> px</label>' : '') +
+    '</div></div>' +
+    '<h2>Invite email</h2>' + f('inviteSubject', 'Subject', '') + f('inviteBody', 'Body', '', 'area', true) +
+    '<h2>Reminder email</h2>' + f('reminderSubject', 'Subject', '') + f('reminderBody', 'Body', '', 'area', true) +
+    '<p class="ph">Placeholders: ' + ['firstName', 'contact', 'company', 'project', 'package', 'due', 'dueShort', 'scope', 'plans', 'trades', 'companyName', 'signature']
+      .map(k => '<code>{' + k + '}</code>').join(' ') + '</p>' +
+    '<h2>Trades</h2>' + f('trades', 'Trade list', 'one per line, used when tagging subs and packages', 'area') +
+    '<h2>CSI cost codes</h2>' + f('costCodes', 'Cost code list', 'one per line: code then description, e.g. 09-29-00 Gypsum Wallboard', 'area') +
+    '<h2>Projects</h2>' + projectsTable() +
+    '<h2>Data</h2><p class="muted" style="margin:0">' +
+    (S.dbUrl ? 'Everything is stored in a Google Sheet you own: <a href="' + esc(S.dbUrl) + '" target="_blank" rel="noopener">open data sheet ↗</a>. Don\'t rename its tabs or column headers.'
+      : 'Demo mode: data is stored in this browser only.') +
+    '<br>PCG Bid Manager v' + VERSION + '</p>' +
+    '<div style="margin-top:18px"><button class="btn primary" data-act="save-settings">Save settings</button></div></div></div>';
+}
+
+function msPanel() {
+  const m = S.ms || {};
+  if (m.error) return '<div class="ms-box"><b style="color:var(--bad)">Microsoft 365 setup couldn\'t load:</b> ' + esc(m.error) +
+    '<p class="muted" style="margin-bottom:0">If this mentions permissions, open the Apps Script editor, run <b>authorize</b> again, and approve the new permission.</p></div>';
+  let status;
+  if (m.connected) {
+    status = '<span class="ms-ok">✓ Connected</span><span>Sending as <b>' + esc(m.email) + '</b></span>' +
+      '<button class="btn small" data-act="ms-test">Send me a test email</button>' +
+      '<button class="btn small danger" data-act="ms-disconnect">Disconnect</button>';
+  } else if (m.configured) {
+    status = '<span>Not connected yet.</span>' +
+      '<a class="btn primary small" href="' + esc(m.authUrl) + '" target="_blank" rel="noopener">Connect Outlook ↗</a>' +
+      '<button class="btn small" data-act="ms-refresh">Refresh status</button>' +
+      '<span class="muted" style="font-size:12px">Sign in in the new tab, then come back and click Refresh status.</span>';
+  } else {
+    status = '<span class="muted">Not set up yet. Follow the steps below once, then save.</span>';
+  }
+  return '<div class="ms-box"><div class="ms-status">' + status + '</div>' +
+    '<details class="ms-steps"' + (m.configured ? '' : ' open') + '><summary>One-time setup in Microsoft 365 (about 10 minutes)</summary><ol>' +
+    '<li>Go to <a href="https://entra.microsoft.com" target="_blank" rel="noopener">entra.microsoft.com</a> and sign in as a Microsoft 365 admin. Open <b>App registrations</b> (type it in the search bar at the top if you don\'t see it in the menu), then click <b>New registration</b>.</li>' +
+    '<li>Name it <b>PCG Bid Manager</b>. Choose <b>Accounts in this organizational directory only</b>. Under Redirect URI, pick <b>Web</b> and paste this:' +
+    '<div class="copy-line" style="margin:6px 0"><code id="ms-redirect">' + esc(m.redirectUri || '') + '</code><button class="btn small" data-act="ms-copy-redirect">Copy</button></div>Click <b>Register</b>.</li>' +
+    '<li>On the app\'s Overview page, copy the <b>Application (client) ID</b> and the <b>Directory (tenant) ID</b> into the boxes below.</li>' +
+    '<li>Go to <b>Certificates &amp; secrets → New client secret</b>, pick 24 months, and click Add. Copy the <b>Value</b> column right away (it\'s only shown once) into the box below. Put the expiry date on your calendar.</li>' +
+    '<li>Go to <b>API permissions → Add a permission → Microsoft Graph → Delegated permissions</b>, check <b>Mail.Send</b>, and click Add. Then click <b>Grant admin consent for</b> your organization.</li>' +
+    '<li>Click <b>Save Microsoft settings</b> below, then <b>Connect Outlook</b> and sign in as mholtzclaw@.</li></ol></details>' +
+    '<div class="row2"><div class="field"><label>Directory (tenant) ID</label><input type="text" id="ms-tenant" value="' + esc(m.tenant || '') + '" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>' +
+    '<div class="field"><label>Application (client) ID</label><input type="text" id="ms-client" value="' + esc(m.clientId || '') + '" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div></div>' +
+    '<div class="field"><label>Client secret value <span class="hint">stored privately in the script, not in your data sheet</span></label>' +
+    '<input type="password" id="ms-secret" autocomplete="off" placeholder="' + (m.hasSecret ? '•••••••• saved (leave blank to keep it)' : 'Paste the secret Value') + '"></div>' +
+    '<button class="btn" data-act="ms-save">Save Microsoft settings</button></div>';
+}
+
+function projectsTable() {
+  const map = {};
+  const add = name => { if (name && !map[lc(name)]) map[lc(name)] = name.trim(); };
+  S.packages.forEach(p => add(p.project));
+  S.budget.forEach(b => add(b.project));
+  Object.keys(projects()).forEach(k => add(projects()[k].name));
+  const names = projectNames();
+  return '<p class="muted" style="margin:0 0 10px;font-size:13px">Each project has one plans &amp; specs link that every bid package on it uses. ' +
+    'Import a job\'s budget to see each package\'s budget and how the low quote compares. Project names must match the project on your bid packages.</p>' +
+    (names.length ? '<div class="tbl-wrap proj-tbl" style="border:1px solid var(--line);border-radius:10px;margin-bottom:10px"><table><thead><tr>' +
+      '<th>Project</th><th>Plans &amp; specs link</th><th class="num">Packages</th><th class="num">Budget</th><th></th></tr></thead><tbody>' +
+      names.map(n => {
+        const b = budgetRows(n), np = S.packages.filter(p => lc(p.project) === lc(n)).length;
+        const legacy = !projectPlans(n) ? (S.packages.find(p => lc(p.project) === lc(n) && p.plansLink) || {}).plansLink || '' : '';
+        return '<tr><td><div class="t1">' + esc(n) + '</div><div class="t3"><a href="#" target="_self" data-act="proj-rename" data-project="' + esc(n) + '">Rename</a>' +
+          (!np && !b.length ? ' · <a href="#" target="_self" data-act="proj-remove" data-project="' + esc(n) + '" style="color:var(--bad)">Remove</a>' : '') + '</div></td>' +
+          '<td><input type="url" data-proj="' + esc(n) + '" value="' + esc(projectPlans(n) || legacy) + '" placeholder="https://…"></td>' +
+          '<td class="num">' + np + '</td>' +
+          '<td class="num">' + (b.length ? money(b.reduce((a, r) => a + (num(r.amount) || 0), 0)) + '<div class="t3">' + b.length + ' codes</div>' : '<span class="muted">—</span>') + '</td>' +
+          '<td class="acts-cell"><button class="btn small" data-act="import-budget" data-project="' + esc(n) + '">' + (b.length ? 'Replace budget' : 'Import budget') + '</button>' +
+          (b.length ? ' <button class="btn small danger" data-act="del-budget" data-project="' + esc(n) + '">Delete budget</button>' : '') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' : '') +
+    '<button class="btn" data-act="new-project">+ New project</button> <button class="btn" data-act="import-budget">+ Import a budget</button>';
+}
+
+function budgetsTable() {
+  const groups = {};
+  S.budget.forEach(b => { const k = lc(b.project); (groups[k] = groups[k] || { project: b.project, rows: [] }).rows.push(b); });
+  const list = Object.keys(groups).sort().map(k => groups[k]);
+  return '<p class="muted" style="margin:0 0 10px;font-size:13px">Import a job\'s budget to see each package\'s budget and how the low quote compares. ' +
+    'The project name must match the project on your bid packages.</p>' +
+    (list.length ? '<div class="tbl-wrap" style="border:1px solid var(--line);border-radius:10px;margin-bottom:10px"><table><thead><tr><th>Project</th><th class="num">Cost codes</th><th class="num">Budget</th><th></th></tr></thead><tbody>' +
+      list.map(g => '<tr><td class="t1">' + esc(g.project) + '</td><td class="num">' + g.rows.length + '</td><td class="num">' + money(g.rows.reduce((a, r) => a + (num(r.amount) || 0), 0)) + '</td>' +
+        '<td class="acts-cell"><button class="btn small" data-act="import-budget" data-project="' + esc(g.project) + '">Replace</button> ' +
+        '<button class="btn small danger" data-act="del-budget" data-project="' + esc(g.project) + '">Delete</button></td></tr>').join('') +
+      '</tbody></table></div>' : '') +
+    '<button class="btn" data-act="import-budget">+ Import a budget</button>';
+}
+
+/* ============================ modals ============================ */
+const modalRoot = document.getElementById('modal-root');
+function openModal(title, body, footer, wide) {
+  modalRoot.innerHTML = '<div class="overlay" data-act="overlay"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog">' +
+    '<header><h3>' + title + '</h3><button class="icon-btn" data-act="close-modal" title="Close">✕</button></header>' +
+    '<div class="body">' + body + '</div><footer>' + footer + '</footer></div></div>';
+  const first = $('.modal input[type=text], .modal textarea', modalRoot);
+  if (first) setTimeout(() => first.focus(), 30);
+}
+function closeModal() { modalRoot.innerHTML = ''; }
+function modalErr(msg) {
+  const b = $('.modal .body', modalRoot);
+  if (!b) return toast(msg, 'err');
+  let e = $('.err-box', b);
+  if (!e) { e = document.createElement('div'); e.className = 'err-box'; b.prepend(e); }
+  e.textContent = msg;
+  b.scrollTop = 0;
+}
+
+function ask(title, msg, okLabel, danger) {
+  return new Promise(resolve => {
+    const root = document.getElementById('confirm-root');
+    root.innerHTML = '<div class="overlay" style="z-index:60"><div class="modal" style="max-width:440px"><header><h3>' + esc(title) + '</h3></header>' +
+      '<div class="body">' + esc(msg) + '</div><footer><button class="btn" id="ask-no">Cancel</button>' +
+      '<button class="btn ' + (danger ? 'danger' : 'primary') + '" id="ask-yes">' + esc(okLabel || 'OK') + '</button></footer></div></div>';
+    const done = v => { root.innerHTML = ''; resolve(v); };
+    $('#ask-no').onclick = () => done(false);
+    $('#ask-yes').onclick = () => done(true);
+    $('#ask-yes').focus();
+  });
+}
+
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => t.remove(), type === 'err' || type === 'warn' ? 8000 : 3500);
+}
+
+function tradePicker(selected) {
+  const sel = splitTrades(selected);
+  const selLc = sel.map(lc);
+  const all = tradeList().slice();
+  sel.forEach(t => { if (!all.map(lc).includes(lc(t))) all.push(t); });
+  return '<div class="tp" id="tp">' + all.map(t => '<span class="chip' + (selLc.includes(lc(t)) ? ' on' : '') + '" data-act="toggle-chip" data-t="' + esc(t) + '">' + esc(t) + '</span>').join('') +
+    '<input type="text" id="tp-new" placeholder="+ Other trade (Enter)"></div>';
+}
+function pickedTrades() { return $$('#tp .chip.on').map(c => c.dataset.t).join(', '); }
+
+/* ---------- package modal ---------- */
+function openPkgModal(p) {
+  const isNew = !p;
+  p = p || { status: 'Draft' };
+  const startProject = p.project || (isNew ? view.pkgProject || (projectNames().length === 1 ? projectNames()[0] : '') : '');
+  const known = projectNames().some(n => lc(n) === lc(startProject));
+  openModal(isNew ? 'New bid package' : 'Edit bid package',
+    '<div class="row2"><div class="field"><label>Project</label>' + projectSelect('f-project-sel', startProject, true) +
+    '<input type="text" id="f-project" data-input="f-project" value="' + esc(startProject) + '" placeholder="New project name, e.g. Home2 Suites Douglasville" style="margin-top:6px;' +
+    (projectNames().length && (known || !startProject) ? 'display:none' : '') + '"></div>' +
+    '<div class="field"><label>Package name</label><input type="text" id="f-name" value="' + esc(p.name) + '" placeholder="e.g. Drywall & Framing"></div></div>' +
+    '<div class="row2"><div class="field"><label>Quotes due</label><input type="datetime-local" id="f-due" value="' + esc((p.due || '').slice(0, 16)) + '"></div>' +
+    '<div class="field"><label>Status</label><select id="f-status">' + PKG_ST.map(s => '<option' + ((p.status || 'Draft') === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></div></div>' +
+    '<div class="field"><label>CSI cost codes <span class="hint">from your cost code list and this project\'s budget</span></label>' +
+    '<div class="row2" style="margin-bottom:8px"><select id="f-div" data-change="f-div"></select><select id="f-code" data-change="f-code"></select></div>' +
+    '<div class="code-chips" id="f-codes"></div></div>' +
+    '<div class="field"><label>Trades <span class="hint">subs with these trades are suggested as bidders</span></label>' + tradePicker(p.trades) + '</div>' +
+    '<div class="field"><label>Plans &amp; specs link <span class="hint">one link per project, shared by every bid package on it</span></label>' +
+    '<input type="url" id="f-plans" data-input="f-plans" value="' + esc(p.project ? plansFor(p) : '') + '" placeholder="https://… (OneDrive, SharePoint, Dropbox or Google Drive share link)"></div>' +
+    '<div class="field"><label>Scope <span class="hint">goes in the invite email</span></label><textarea id="f-scope" rows="5">' + esc(p.scope) + '</textarea></div>' +
+    '<div class="field"><label>Internal notes <span class="hint">not emailed</span></label><textarea id="f-notes" rows="2">' + esc(p.notes) + '</textarea></div>',
+    '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="m-save-pkg" data-id="' + esc(p.id || '') + '">' + (isNew ? 'Create package' : 'Save') + '</button>');
+  PK.codes = pkgCodes(p);
+  PK.plansTouched = false;
+  PK.div = PK.codes.length ? divOf(PK.codes[0]) : '';
+  fillCodeSelects();
+}
+
+const PK = { codes: [], div: '' };
+function fillCodeSelects() {
+  const project = $('#f-project') ? $('#f-project').value : '';
+  const opts = codeOptions(project);
+  const divs = Array.from(new Set(opts.map(o => divOf(o.code)))).sort();
+  $('#f-div').innerHTML = '<option value="">All divisions</option>' + divs.map(d => '<option value="' + d + '"' + (PK.div === d ? ' selected' : '') + '>' + esc(divName(d)) + '</option>').join('');
+  const list = opts.filter(o => !PK.div || divOf(o.code) === PK.div);
+  $('#f-code').innerHTML = '<option value="">' + (list.length ? 'Pick a cost code to add…' : 'No cost codes. Add them in Settings.') + '</option>' +
+    list.map(o => '<option value="' + esc(o.code) + '"' + (PK.codes.includes(o.code) ? ' disabled' : '') + '>' + esc(o.code + '  ' + o.desc + (o.budget != null ? '  —  ' + money(o.budget) : '')) + '</option>').join('');
+  drawCodeChips();
+}
+function drawCodeChips() {
+  const project = $('#f-project') ? $('#f-project').value : '';
+  let total = 0, any = false;
+  $('#f-codes').innerHTML = PK.codes.map(c => {
+    const ci = codeInfo(c, project);
+    if (ci.budget != null) { total += ci.budget; any = true; }
+    return '<div class="code-chip"><span class="code">' + esc(c) + '</span><span class="grow">' + esc(ci.desc || 'Not in your cost code list') + '</span>' +
+      (ci.budget != null ? '<span class="muted">' + money(ci.budget) + '</span>' : '') +
+      '<button class="icon-btn" data-act="rm-code" data-code="' + esc(c) + '" title="Remove">✕</button></div>';
+  }).join('') + (any && PK.codes.length > 1 ? '<div class="code-total">Budget total ' + money(total) + '</div>' : '');
+}
+
+function savePkgFromModal(id) {
+  const name = $('#f-name').value.trim();
+  const project = $('#f-project').value.trim().replace(/\s+/g, ' ');
+  if (!project) return modalErr('Enter a project name.');
+  if (!name) return modalErr('Enter a package name.');
+  const plans = $('#f-plans').value.trim();
+  if (plans && !/^https?:\/\//i.test(plans)) return modalErr('The plans link should start with https://');
+  let p = id ? pkgById(id) : null;
+  const isNew = !p;
+  if (plans !== projectPlans(project)) setProjectPlans(project, plans);
+  if (isNew) { p = { id: uid(), created: new Date().toISOString() }; S.packages.push(p); }
+  Object.assign(p, { project: project, name: name, due: $('#f-due').value, status: $('#f-status').value, trades: pickedTrades(),
+    plansLink: '', scope: $('#f-scope').value.trim(), notes: $('#f-notes').value.trim(), costCodes: PK.codes.join(', ') });
+  save('apiSave', 'Packages', [p]);
+  closeModal();
+  if (isNew) { view.tab = 'package'; view.pkgId = p.id; view.selected = new Set(); window.scrollTo(0, 0); }
+  render();
+  toast(isNew ? 'Package created. Now add bidders.' : 'Package saved', 'ok');
+}
+
+/* ---------- sub modal ---------- */
+let subModalAfter = null;
+function openSubModal(s, after) {
+  const isNew = !s;
+  s = s || { active: 'Y' };
+  subModalAfter = after || null;
+  const inv = s.id ? S.invites.filter(i => i.subId === s.id) : [];
+  const hist = inv.length ? '<div class="field"><label>Bid history</label><div class="t2">' + inv.map(i => {
+    const p = pkgById(i.packageId) || {};
+    return esc((p.project ? p.project + ' – ' : '') + (p.name || '')) + ': ' + esc(i.status) + (num(i.amount) != null ? ' ' + money(i.amount) : '');
+  }).join('<br>') + '</div></div>' : '';
+  openModal(isNew ? 'Add subcontractor' : 'Edit subcontractor',
+    '<div class="row2"><div class="field"><label>Company</label><input type="text" id="s-company" value="' + esc(s.company) + '"></div>' +
+    '<div class="field"><label>Contact name</label><input type="text" id="s-contact" value="' + esc(s.contact) + '"></div></div>' +
+    '<div class="row2"><div class="field"><label>Email</label><input type="email" id="s-email" value="' + esc(s.email) + '"></div>' +
+    '<div class="field"><label>Phone</label><input type="tel" id="s-phone" value="' + esc(s.phone) + '"></div></div>' +
+    '<div class="field"><label>Trades</label>' + tradePicker(s.trades) + '</div>' +
+    '<div class="field"><label>Notes</label><textarea id="s-notes" rows="2">' + esc(s.notes) + '</textarea></div>' +
+    '<div class="field"><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="s-active"' + (s.active !== 'N' ? ' checked' : '') + '> Active <span class="hint">(inactive subs are hidden when adding bidders)</span></label></div>' + hist,
+    '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="m-save-sub" data-id="' + esc(s.id || '') + '">' + (isNew ? 'Add sub' : 'Save') + '</button>');
+}
+
+function saveSubFromModal(id) {
+  const company = $('#s-company').value.trim();
+  const email = $('#s-email').value.trim();
+  if (!company) return modalErr('Enter a company name.');
+  if (email && !isEmail(email)) return modalErr('That email address doesn\'t look right.');
+  if (!pickedTrades()) return modalErr('Pick at least one trade.');
+  let s = id ? subById(id) : null;
+  const isNew = !s;
+  if (isNew && email && S.subs.some(x => lc(x.email) === lc(email))) return modalErr('A sub with that email is already in your directory.');
+  if (isNew) { s = { id: uid(), created: new Date().toISOString() }; S.subs.push(s); }
+  Object.assign(s, { company: company, contact: $('#s-contact').value.trim(), email: email, phone: $('#s-phone').value.trim(),
+    trades: pickedTrades(), notes: $('#s-notes').value.trim(), active: $('#s-active').checked ? 'Y' : 'N' });
+  const recs = [s];
+  if (!isNew) {
+    // keep not-yet-sent invites in sync with contact changes
+    S.invites.filter(i => i.subId === s.id && i.status === 'Not Sent').forEach(i => {
+      Object.assign(i, { company: s.company, contact: s.contact, email: s.email });
+      save('apiSave', 'Invites', [i]);
+    });
+  }
+  save('apiSave', 'Subs', recs);
+  const after = subModalAfter;
+  closeModal();
+  if (after) after(s); else render();
+  toast(isNew ? 'Sub added' : 'Sub saved', 'ok');
+}
+
+/* ---------- add bidders ---------- */
+const AB = { matchOnly: true, q: '', picked: new Set() };
+function openAddBidders(preselect) {
+  const p = pkgById(view.pkgId);
+  AB.matchOnly = splitTrades(p.trades).length > 0;
+  AB.q = '';
+  AB.picked = new Set(preselect || []);
+  openModal('Add bidders – ' + esc(p.name),
+    '<div class="bar" style="margin-bottom:10px"><input type="search" id="ab-q" placeholder="Search subs…" class="grow" data-input="ab-q">' +
+    (splitTrades(p.trades).length ? '<label style="display:flex;gap:6px;align-items:center;white-space:nowrap"><input type="checkbox" id="ab-match" data-change="ab-match"' + (AB.matchOnly ? ' checked' : '') + '> Only matching trades</label>' : '') +
+    '</div><div class="pick-list" id="ab-list"></div>' +
+    '<p class="muted" style="font-size:13px;margin:10px 0 0">Not in your directory? <a href="#" target="_self" data-act="ab-new-sub">Add a new sub</a></p>',
+    '<span class="left" id="ab-count"></span><button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="m-add-bidders">Add selected</button>', false);
+  drawAddBidders();
+}
+function drawAddBidders() {
+  const p = pkgById(view.pkgId);
+  const ptr = splitTrades(p.trades).map(lc);
+  const existing = new Set(invitesFor(p.id).map(i => i.subId));
+  const q = lc(AB.q);
+  const list = S.subs.filter(s => {
+    if (s.active === 'N' && !AB.picked.has(s.id)) return false;
+    const match = splitTrades(s.trades).some(t => ptr.includes(lc(t)));
+    if (AB.matchOnly && ptr.length && !match && !AB.picked.has(s.id)) return false;
+    if (q && !lc([s.company, s.contact, s.email, s.trades].join(' ')).includes(q)) return false;
+    return true;
+  }).sort((a, b) => (existing.has(a.id) - existing.has(b.id)) || lc(a.company).localeCompare(lc(b.company)));
+  const el = $('#ab-list');
+  if (!el) return;
+  el.innerHTML = list.length ? list.map(s => {
+    const added = existing.has(s.id);
+    return '<label class="pick' + (added ? ' disabled' : '') + '"><input type="checkbox" data-change="ab-pick" data-id="' + esc(s.id) + '"' +
+      (added || AB.picked.has(s.id) ? ' checked' : '') + (added ? ' disabled' : '') + '>' +
+      '<div class="grow"><div>' + esc(s.company) + (added ? ' <span class="chip">Already added</span>' : '') + '</div>' +
+      '<div class="t2">' + esc(s.contact || '') + (s.contact && s.email ? ' · ' : '') + (s.email ? esc(s.email) : '<span style="color:var(--bad)">no email</span>') + '</div>' +
+      '<div>' + chips(s.trades) + '</div></div></label>';
+  }).join('') : '<div class="empty">' + (S.subs.length ? 'No subs match. Uncheck "Only matching trades" to see everyone.' : 'Your sub directory is empty.') + '</div>';
+  const c = $('#ab-count');
+  if (c) c.textContent = AB.picked.size ? AB.picked.size + ' selected' : '';
+}
+function addPickedBidders() {
+  const p = pkgById(view.pkgId);
+  const existing = new Set(invitesFor(p.id).map(i => i.subId));
+  const recs = [];
+  AB.picked.forEach(sid => {
+    const s = subById(sid);
+    if (!s || existing.has(sid)) return;
+    recs.push({ id: uid(), packageId: p.id, subId: s.id, company: s.company, contact: s.contact, email: s.email,
+      status: 'Not Sent', sentAt: '', remindedAt: '', reminders: '0', amount: '', receivedAt: '', notes: '' });
+  });
+  if (!recs.length) return modalErr('Select at least one sub.');
+  S.invites = S.invites.concat(recs);
+  save('apiSave', 'Invites', recs);
+  closeModal();
+  render();
+  toast('Added ' + recs.length + ' bidder' + (recs.length > 1 ? 's' : '') + '. Click "Send invites" when ready.', 'ok');
+}
+
+/* ---------- send email ---------- */
+let SEND = null;
+function openSend(kind) {
+  const p = pkgById(view.pkgId);
+  const targets = kind === 'invite' ? inviteTargets(p) : reminderTargets(p);
+  const st = S.settings;
+  SEND = { kind: kind, pid: p.id };
+  const subj = kind === 'invite' ? st.inviteSubject : st.reminderSubject;
+  const body = kind === 'invite' ? st.inviteBody : st.reminderBody;
+  const warn = [];
+  if (!plansFor(p)) warn.push('No plans link for ' + (p.project || 'this project') + ' yet.');
+  if (!p.due) warn.push('No due date set.');
+  if (viaMs() && !msReady()) warn.push('Settings say to send through Microsoft 365, but Outlook isn\'t connected. Connect it in Settings, or switch "Send email from" back to Google.');
+  if (!viaMs() && !isEmail(st.replyTo)) warn.push('No reply-to address in Settings, so replies go to the Google account.');
+  openModal((kind === 'invite' ? 'Send invites' : 'Send reminder') + ' – ' + esc(p.name),
+    (warn.length ? '<div class="err-box" style="background:var(--warn-bg);color:var(--warn)">' + warn.map(esc).join('<br>') + '</div>' : '') +
+    '<div class="send-grid"><div><div class="field" style="margin:0"><label>Recipients</label><div class="rcpt" id="rcpt">' +
+    targets.map(i => '<label><input type="checkbox" data-change="rcpt" data-id="' + esc(i.id) + '"' + (isEmail(i.email) ? ' checked' : ' disabled') + '>' +
+      '<div>' + esc(i.company) + '<small>' + (isEmail(i.email) ? esc(i.email) : 'no valid email') + '</small></div></label>').join('') +
+    '</div></div></div>' +
+    '<div><div class="field"><label>Subject</label><input type="text" id="m-subj" data-input="preview" value="' + esc(subj) + '"></div>' +
+    '<div class="field"><label>Message</label>' + fmtBar('m-body') + '<textarea id="m-body" class="rich" rows="11" data-input="preview">' + esc(body) + '</textarea>' +
+    '<p class="ph">Placeholders fill in per sub: <code>{firstName}</code> <code>{contact}</code> <code>{company}</code> <code>{project}</code> <code>{package}</code> <code>{due}</code> <code>{scope}</code> <code>{plans}</code> <code>{signature}</code></p></div>' +
+    '<div class="field"><label>Preview <span class="hint" id="pv-who"></span></label><div class="preview" id="pv"></div></div>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="m-keep"> Save subject and message as my default ' + (kind === 'invite' ? 'invite' : 'reminder') + '</label>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="m-ownsig" data-change="ownsig"' + (st.outlookOwnSig === 'Y' ? ' checked' : '') + '> With "Use Outlook instead", leave off my signature and logo because Outlook adds its own</label>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="m-olbcc" data-change="olbcc"' + (st.outlookBcc === 'Y' ? ' checked' : '') + '> With "Use Outlook instead", put bidders in BCC (you in To) so they can\'t see each other</label></div></div>',
+    '<span class="left" id="send-left"></span>' +
+    '<button class="btn" data-act="m-outlook" title="Opens one Outlook email to the checked bidders">Use Outlook instead</button>' +
+    '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" id="send-btn" data-act="m-send">Send</button>', true);
+  updateSendPreview();
+}
+function sendChecked() { return $$('#rcpt input:checked').map(c => invById(c.dataset.id)).filter(Boolean); }
+function updateSendPreview() {
+  const p = pkgById(SEND.pid);
+  const list = sendChecked();
+  const inv = list[0] || { contact: '', company: '' };
+  $('#pv').innerHTML = '<div class="pv-subj"><b>Subject:</b> ' + esc(toPlain(fill($('#m-subj').value, p, inv))) + '</div>' +
+    toEmailHtml(fill($('#m-body').value, p, inv), S.settings.logo);
+  $('#pv-who').textContent = list[0] ? '(as ' + list[0].company + ' will see it)' : '';
+  const n = list.length;
+  $('#send-btn').textContent = 'Send ' + n + ' email' + (n === 1 ? '' : 's');
+  $('#send-btn').disabled = !n || (viaMs() && !msReady());
+  $('#send-left').textContent = senderLine();
+}
+function keepTemplate() {
+  if (!$('#m-keep').checked) return;
+  const k = SEND.kind;
+  const o = {};
+  o[k + 'Subject'] = $('#m-subj').value;
+  o[k + 'Body'] = $('#m-body').value;
+  Object.assign(S.settings, o);
+  save('apiSaveSettings', o);
+}
+function markSentLocally(invs, kind) {
+  const now = new Date().toISOString();
+  invs.forEach(i => {
+    if (kind === 'invite') { if (!i.status || i.status === 'Not Sent') i.status = 'Invited'; i.sentAt = now; }
+    else { i.remindedAt = now; i.reminders = String((+i.reminders || 0) + 1); }
+  });
+  save('apiSave', 'Invites', invs);
+}
+function afterSend(kind, p) {
+  if (kind === 'invite' && (p.status || 'Draft') === 'Draft') { p.status = 'Out to Bid'; save('apiSave', 'Packages', [p]); }
+  view.selected = new Set();
+}
+function doSend() {
+  const p = pkgById(SEND.pid), kind = SEND.kind;
+  const list = sendChecked();
+  if (!list.length) return modalErr('Select at least one recipient.');
+  const subj = $('#m-subj').value, body = $('#m-body').value;
+  if (!subj.trim() || !body.trim()) return modalErr('Subject and message can\'t be blank.');
+  const msgs = list.map(i => {
+    const filled = fill(body, p, i);
+    return { inviteId: i.id, to: i.email, subject: toPlain(fill(subj, p, i)), body: toPlain(filled), html: toEmailHtml(filled, 'cid:pcglogo') };
+  });
+  keepTemplate();
+  const btn = $('#send-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  call('apiSend', msgs, kind).then(res => {
+    (res.invites || []).forEach(u => { const i = invById(u.id); if (i) Object.assign(i, u); });
+    if (res.quota != null) S.quota = res.quota;
+    afterSend(kind, p);
+    closeModal();
+    render();
+    if (res.failed && res.failed.length) toast('Sent ' + res.sent.length + '. Not sent: ' + res.failed.map(f => f.error).join('; '), 'warn');
+    else toast('Sent ' + res.sent.length + ' email' + (res.sent.length === 1 ? '' : 's'), 'ok');
+  }).catch(e => {
+    btn.disabled = false; updateSendPreview();
+    modalErr('Nothing was sent: ' + errMsg(e));
+  });
+}
+function copyRich(html, text) {
+  let ok = false;
+  const div = document.createElement('div');
+  div.contentEditable = 'true';
+  div.style.cssText = 'position:fixed;left:-10000px;top:0;width:700px;background:#fff';
+  div.innerHTML = html;
+  document.body.appendChild(div);
+  const range = document.createRange();
+  range.selectNodeContents(div);
+  const sel = window.getSelection();
+  sel.removeAllRanges(); sel.addRange(range);
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  sel.removeAllRanges();
+  div.remove();
+  if (!ok && navigator.clipboard && window.ClipboardItem) {
+    try {
+      navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
+      ok = true;
+    } catch (e) { ok = false; }
+  }
+  return ok;
+}
+function openMailto(url) {
+  const a = document.createElement('a');
+  a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function useOutlook() {
+  const p = pkgById(SEND.pid), kind = SEND.kind;
+  const list = sendChecked();
+  if (!list.length) return modalErr('Select at least one recipient.');
+  const generic = { contact: '', company: '' };
+  const ownSig = $('#m-ownsig') && $('#m-ownsig').checked;
+  const subj = toPlain(fill($('#m-subj').value, p, generic));
+  const filled = fill($('#m-body').value, p, generic, ownSig);
+  const text = toPlain(filled);
+  // mailto links can only carry plain text, so the formatted version is copied for pasting
+  const html = toEmailHtml(filled, S.settings.logo);
+  const copied = copyRich(html, text);
+  const st = S.settings;
+  const emails = list.map(i => i.email.trim()).join(';');
+  const useBcc = st.outlookBcc !== 'N';
+  const url = useBcc
+    ? 'mailto:' + (isEmail(st.replyTo) ? encodeURIComponent(st.replyTo) : '') + '?bcc=' + encodeURIComponent(emails) + '&subject=' + encodeURIComponent(subj)
+    : 'mailto:' + encodeURIComponent(emails).replace(/%3B/g, ';').replace(/%40/g, '@') + '?subject=' + encodeURIComponent(subj);
+  keepTemplate();
+  openMailto(url);
+  OL = { list: list, kind: kind, pid: p.id, html: html, text: text, url: url };
+  const n = list.length, what = kind === 'invite' ? 'invited' : 'reminded';
+  openModal('Finish in Outlook',
+    '<ol style="margin:0 0 12px;padding-left:20px;line-height:1.7">' +
+    '<li>Outlook opened a new email with ' + n + ' bidder' + (n === 1 ? '' : 's') + ' in ' + (useBcc ? 'BCC' : 'To') + ' and the subject filled in. Its body is blank on purpose.</li>' +
+    '<li>Click in the Outlook message body and press <b>Ctrl+V</b> to paste the formatted message' + (copied ? ' (it\'s already copied)' : '') + '.</li>' +
+    '<li>Nothing pasted? Click <b>Copy message</b> below and paste again, or select the message below and press Ctrl+C.</li>' +
+    '<li>Send it, then click <b>Sent</b> here.</li></ol>' +
+    '<div class="preview" id="ol-msg" style="max-height:340px">' + html + '</div>',
+    '<span class="left">Outlook didn\'t open? <a href="#" target="_self" data-act="ol-reopen">Open it again</a></span>' +
+    '<button class="btn" data-act="ol-copy">Copy message</button>' +
+    '<button class="btn" data-act="close-modal">Not sent yet</button>' +
+    '<button class="btn primary" data-act="ol-done">Sent – mark ' + what + '</button>', true);
+}
+let OL = null;
+function outlookDone() {
+  if (!OL) return closeModal();
+  const p = pkgById(OL.pid);
+  markSentLocally(OL.list, OL.kind);
+  afterSend(OL.kind, p);
+  closeModal();
+  render();
+  toast('Marked ' + OL.list.length + ' as ' + (OL.kind === 'invite' ? 'invited' : 'reminded'), 'ok');
+}
+
+/* ---------- import budget ---------- */
+function openBudgetImport(project) {
+  const known = projectNames().some(n => lc(n) === lc(project));
+  openModal('Import project budget',
+    '<div class="field"><label>Project</label>' + projectSelect('b-project-sel', project, true) +
+    '<input type="text" id="b-project" value="' + esc(project || '') + '" placeholder="New project name" style="margin-top:6px;' +
+    (projectNames().length && (known || !project) ? 'display:none' : '') + '"></div>' +
+    '<div class="field"><label>Budget lines <span class="hint">paste from Excel or your job cost report: cost code, description, amount</span></label>' +
+    '<textarea id="b-text" rows="10" data-input="bud" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px" placeholder="09-29-00\tGypsum Wallboard\t713343.40\n09-30-10\tBathroom Tile\t171100.00"></textarea>' +
+    '<p class="ph">Lines without a cost code (division headers, subtotals) are skipped. Importing replaces any budget already saved for this project.</p></div>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="b-lib" checked> Add any new cost codes to my cost code list</label>',
+    '<span class="left" id="b-sum"></span><button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" id="b-btn" data-act="m-budget" disabled>Import</button>');
+}
+function parseBudget(text) {
+  const by = {};
+  String(text || '').split(/\r?\n/).forEach(line => {
+    const r = parseCodeLine(line.replace(/\t+/g, '\t'));
+    if (!r) return;
+    if (by[r.code]) { by[r.code].amount = String((num(by[r.code].amount) || 0) + (num(r.amount) || 0)); }
+    else by[r.code] = r;
+  });
+  return Object.keys(by).sort().map(k => by[k]);
+}
+function updateBudgetSummary() {
+  const rows = parseBudget($('#b-text').value);
+  const total = rows.reduce((a, r) => a + (num(r.amount) || 0), 0);
+  const lib = new Set(library().map(l => l.code));
+  const fresh = rows.filter(r => !lib.has(r.code)).length;
+  $('#b-sum').textContent = rows.length ? rows.length + ' cost codes · ' + money(total) + (fresh ? ' · ' + fresh + ' new to your list' : '') : '';
+  $('#b-btn').disabled = !rows.length;
+}
+function doBudgetImport() {
+  const project = $('#b-project').value.trim();
+  if (!project) return modalErr('Enter the project name.');
+  const rows = parseBudget($('#b-text').value);
+  if (!rows.length) return modalErr('No cost code lines found.');
+  const old = budgetRows(project).map(b => b.id);
+  const recs = rows.map(r => ({ id: uid(), project: project, code: r.code, description: r.desc, amount: r.amount }));
+  S.budget = S.budget.filter(b => lc(b.project) !== lc(project)).concat(recs);
+  if (old.length) save('apiDelete', 'Budget', old);
+  save('apiSave', 'Budget', recs);
+  if ($('#b-lib').checked) {
+    const have = new Set(library().map(l => l.code));
+    const add = rows.filter(r => !have.has(r.code) && r.desc);
+    if (add.length) {
+      const all = library().concat(add.map(r => ({ code: r.code, desc: r.desc }))).sort((a, b) => a.code.localeCompare(b.code));
+      S.settings.costCodes = all.map(l => l.code + ' ' + l.desc).join('\n');
+      save('apiSaveSettings', { costCodes: S.settings.costCodes });
+    }
+  }
+  closeModal(); render();
+  toast('Imported ' + recs.length + ' budget lines for ' + project, 'ok');
+}
+
+/* ---------- copy bid tab ---------- */
+function openCopyTab() {
+  const p = pkgById(view.pkgId);
+  const rows = [['Company', 'Contact', 'Email', 'Phone', 'Status', 'Quote', 'Received', 'Notes']].concat(sortedBidders(p.id).map(i => {
+    const s = subById(i.subId) || {};
+    return [i.company, i.contact, i.email, s.phone || '', i.status, num(i.amount) != null ? num(i.amount) : '', (i.receivedAt || '').slice(0, 10), i.notes];
+  }));
+  const text = rows.map(r => r.map(c => String(c == null ? '' : c).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
+  openModal('Copy bid tab',
+    '<p class="muted" style="margin-top:0">' + esc(p.project) + ' – ' + esc(p.name) + '. Copy this and paste it into Excel; the columns line up automatically.</p>' +
+    '<textarea id="ct" rows="10" readonly style="font-family:monospace;font-size:12px;white-space:pre">' + esc(text) + '</textarea>',
+    '<button class="btn" data-act="close-modal">Close</button><button class="btn primary" data-act="m-copy">Copy to clipboard</button>');
+}
+function copyTab() {
+  const ta = $('#ct');
+  ta.focus(); ta.select();
+  const done = () => { toast('Copied. Paste into Excel.', 'ok'); closeModal(); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(done, () => { try { document.execCommand('copy'); done(); } catch (e) { toast('Press Ctrl+C to copy', 'warn'); } });
+  } else {
+    try { document.execCommand('copy'); done(); } catch (e) { toast('Press Ctrl+C to copy', 'warn'); }
+  }
+}
+
+/* ---------- import subs (Outlook / Excel) ---------- */
+const IMP = { src: 'outlook', rows: [] };
+const FREE_MAIL = ['gmail', 'yahoo', 'outlook', 'hotmail', 'aol', 'icloud', 'live', 'msn', 'comcast', 'att', 'bellsouth', 'me', 'charter', 'verizon', 'protonmail', 'ymail', 'sbcglobal'];
+function guessCompany(email) {
+  const parts = (String(email || '').split('@')[1] || '').toLowerCase().split('.');
+  if (parts.length < 2) return '';
+  const base = parts[parts.length - 2];
+  if (!base || FREE_MAIL.includes(base)) return '';
+  return base.split(/[-_]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+function flipName(n) {
+  n = String(n || '').replace(/^[\s,;"']+|[\s"']+$/g, '').trim();
+  const m = n.match(/^([^,]+),\s*(.+)$/);
+  return m ? m[2] + ' ' + m[1] : n;
+}
+
+function openImport() {
+  IMP.src = 'outlook'; IMP.rows = [];
+  const srcs = [['outlook', 'Outlook contacts file'], ['paste', 'Paste from an Outlook email'], ['excel', 'Paste from Excel']];
+  openModal('Import subs',
+    '<div class="seg" style="margin-bottom:14px;flex-wrap:wrap">' + srcs.map(x => '<button data-act="imp-src" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+    '<div id="imp-src"></div><div id="imp-review"></div>',
+    '<span class="left" id="imp-sum"></span><button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" id="imp-btn" data-act="m-import" disabled>Import</button>', true);
+  drawImportSource();
+}
+function drawImportSource() {
+  $$('[data-act="imp-src"]').forEach(b => b.classList.toggle('on', b.dataset.v === IMP.src));
+  const el = $('#imp-src');
+  if (IMP.src === 'outlook') {
+    el.innerHTML = '<div class="howto"><b>Export your contacts from Outlook to a .csv file:</b><ul>' +
+      '<li><b>New Outlook or Outlook on the web:</b> People → Manage contacts → Export contacts → pick a folder or category → Export</li>' +
+      '<li><b>Classic Outlook:</b> File → Open &amp; Export → Import/Export → Export to a file → Comma Separated Values → Contacts</li></ul>' +
+      'Then choose that file below. You\'ll review everyone before anything is saved. Outlook categories that match your trade names come in as trades.</div>' +
+      '<input type="file" id="imp-file" accept=".csv,text/csv" data-change="imp-file">';
+  } else if (IMP.src === 'paste') {
+    el.innerHTML = '<div class="howto">Open an email you sent to (or got from) your subs, or a contact group. Click in the <b>To</b> or <b>Cc</b> line, press <b>Ctrl+A</b>, then <b>Ctrl+C</b>, and paste below.</div>' +
+      '<textarea id="imp-text" rows="4" data-input="imp-paste" placeholder="Mike Reynolds <mike@example.com>; Dana Cole <dana@example.com>"></textarea>';
+  } else {
+    el.innerHTML = '<div class="howto">In Excel, select rows with these columns in this order and paste: <span class="chip">Company</span> <span class="chip">Trade(s)</span> <span class="chip">Contact</span> <span class="chip">Email</span> <span class="chip">Phone</span>. Separate several trades with ; or /.</div>' +
+      '<textarea id="imp-text" rows="4" data-input="imp-excel"></textarea>';
+  }
+  IMP.rows = [];
+  drawImportReview();
+}
+
+function parseCSV(text) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+function fromContactsCSV(text) {
+  const rows = parseCSV(String(text || '').replace(/^﻿/, ''));
+  if (rows.length < 2) return [];
+  const H = rows[0].map(h => lc(h).replace(/[^a-z0-9]/g, ''));
+  const get = (r, names) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0 && r[i] && r[i].trim()) return r[i].trim(); } return ''; };
+  const known = tradeList().map(lc);
+  return rows.slice(1).map(r => {
+    const email = get(r, ['emailaddress', 'email', 'email1value', 'emailaddress1', 'email1', 'primaryemail', 'email2address', 'email2value']);
+    const first = get(r, ['firstname', 'givenname']), last = get(r, ['lastname', 'surname', 'familyname']);
+    const contact = (first || last) ? (first + ' ' + last).trim() : flipName(get(r, ['name', 'displayname', 'fullname']));
+    const company = get(r, ['company', 'companyname', 'organization', 'organizationname', 'organization1name']) || guessCompany(email);
+    const phone = get(r, ['businessphone', 'mobilephone', 'primaryphone', 'companymainphone', 'phone', 'phone1value', 'businessphone2', 'homephone']);
+    const tradeCol = get(r, ['trade', 'trades']).replace(/[\/;|]/g, ',');
+    const cats = get(r, ['categories', 'category', 'groupmembership']).split(/[;,]|:::/).map(x => x.replace(/\*/g, '').trim()).filter(c => known.includes(lc(c)));
+    return { company: company, contact: contact, email: email, phone: phone, trades: splitTrades(tradeCol + ',' + cats.join(',')).join(', ') };
+  }).filter(r => r.email || r.company);
+}
+function fromPastedAddresses(text) {
+  const out = [], seen = new Set();
+  String(text || '').split(/[;\n\r]+/).forEach(part => {
+    const re = /(?:"?([^"<>@]*?)"?\s*)<\s*([^<>\s]+@[^<>\s]+)\s*>|([^\s<>;,"'()]+@[^\s<>;,"'()]+\.[a-z]{2,})/gi;
+    let m;
+    while ((m = re.exec(part))) {
+      const email = (m[2] || m[3] || '').trim().replace(/[.,]$/, '');
+      if (!isEmail(email) || seen.has(lc(email))) continue;
+      seen.add(lc(email));
+      let name = flipName(m[1] || '');
+      if (lc(name) === lc(email) || name.indexOf('@') >= 0) name = '';
+      out.push({ company: guessCompany(email), contact: name, email: email, phone: '', trades: '' });
+    }
+  });
+  return out;
+}
+function fromExcel(text) {
+  const out = [];
+  String(text || '').split(/\r?\n/).forEach((line, idx) => {
+    if (!line.trim()) return;
+    const cells = (line.indexOf('\t') >= 0 ? line.split('\t') : line.split(',')).map(c => c.trim().replace(/^"|"$/g, '').trim());
+    const company = cells[0] || '';
+    if (!company || (idx === 0 && /^(company|name|subcontractor)/i.test(company))) return;
+    out.push({ company: company, trades: splitTrades(String(cells[1] || '').replace(/[\/;|]/g, ',')).join(', '),
+      contact: cells[2] || '', email: cells[3] || '', phone: cells[4] || '' });
+  });
+  return out;
+}
+function matchSub(r) {
+  return S.subs.find(s => (r.email && s.email && lc(s.email) === lc(r.email)) || (!r.email && lc(s.company) === lc(r.company)));
+}
+function setImportRows(rows) {
+  IMP.rows = rows.map(r => Object.assign({ sel: true }, r));
+  drawImportReview();
+}
+function importStatus(r) {
+  if (r.email && !isEmail(r.email)) return ['bad', 'Check email'];
+  if (!String(r.company || '').trim()) return ['bad', 'Needs company'];
+  return matchSub(r) ? ['upd', 'Updates existing'] : ['new', 'New'];
+}
+const importOk = r => r.sel && importStatus(r)[0] !== 'bad';
+function drawImportReview() {
+  const el = $('#imp-review');
+  if (!el) return;
+  if (!IMP.rows.length) { el.innerHTML = ''; updateImportSum(); return; }
+  const trades = tradeList();
+  el.innerHTML = '<div class="bar" style="margin:14px 0 8px"><span><b>' + IMP.rows.length + ' contact' + (IMP.rows.length === 1 ? '' : 's') + ' found.</b> <span class="muted">Fill in company and trade; uncheck anyone you don\'t want.</span></span>' +
+    '<span class="grow"></span><select id="imp-bulk" data-change="imp-bulk" style="width:auto"><option value="">Add a trade to checked rows…</option>' +
+    trades.map(t => '<option>' + esc(t) + '</option>').join('') + '</select></div>' +
+    '<div class="imp-tbl"><table><thead><tr><th><input type="checkbox" data-change="imp-all"' + (IMP.rows.every(r => r.sel) ? ' checked' : '') + '></th>' +
+    '<th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Trades</th><th></th></tr></thead><tbody>' +
+    IMP.rows.map((r, i) => {
+      const st = importStatus(r);
+      return '<tr' + (r.sel ? '' : ' class="dim"') + '><td><input type="checkbox" data-change="imp-sel" data-i="' + i + '"' + (r.sel ? ' checked' : '') + '></td>' +
+        ['company', 'contact', 'email', 'phone', 'trades'].map(k => '<td><input type="text" data-input="imp-cell" data-i="' + i + '" data-k="' + k + '" value="' + esc(r[k]) + '"' +
+          (k === 'trades' ? ' list="dl-trades" placeholder="e.g. Drywall"' : '') + '></td>').join('') +
+        '<td><span class="imp-st ' + st[0] + '" id="imp-st-' + i + '">' + st[1] + '</span></td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<datalist id="dl-trades">' + trades.map(t => '<option value="' + esc(t) + '">').join('') + '</datalist>';
+  updateImportSum();
+}
+function updateImportSum() {
+  const ok = IMP.rows.filter(importOk);
+  const upd = ok.filter(matchSub).length;
+  const sum = $('#imp-sum'), btn = $('#imp-btn');
+  if (sum) sum.textContent = IMP.rows.length ? ok.length + ' ready: ' + (ok.length - upd) + ' new, ' + upd + ' update existing' : '';
+  if (btn) { btn.disabled = !ok.length; btn.textContent = ok.length ? 'Import ' + ok.length : 'Import'; }
+}
+function doImport() {
+  const rows = IMP.rows.filter(importOk);
+  const changed = [];
+  rows.forEach(raw => {
+    const r = { company: raw.company.trim(), contact: (raw.contact || '').trim(), email: (raw.email || '').trim(), phone: (raw.phone || '').trim(),
+      trades: splitTrades(String(raw.trades || '').replace(/[\/;|]/g, ',')).join(', ') };
+    const ex = matchSub(r) || changed.find(s => (r.email && lc(s.email) === lc(r.email)) || (!r.email && lc(s.company) === lc(r.company)));
+    if (ex) {
+      ex.trades = splitTrades(ex.trades + ',' + r.trades).join(', ');
+      ['contact', 'email', 'phone'].forEach(k => { if (!ex[k] && r[k]) ex[k] = r[k]; });
+      if (changed.indexOf(ex) < 0) changed.push(ex);
+    } else {
+      const s2 = Object.assign({ id: uid(), notes: '', active: 'Y', created: new Date().toISOString() }, r);
+      S.subs.push(s2); changed.push(s2);
+    }
+  });
+  if (changed.length) save('apiSave', 'Subs', changed);
+  closeModal(); render();
+  const noTrade = changed.filter(x => !x.trades).length;
+  toast('Imported ' + rows.length + ' sub' + (rows.length === 1 ? '' : 's') + (noTrade ? '. ' + noTrade + ' have no trade yet; add one so they show up as suggested bidders.' : ''), noTrade ? 'warn' : 'ok');
+}
+
+function applyFmt(id, k) {
+  const ta = document.getElementById(id);
+  if (!ta) return;
+  const a = ta.selectionStart, b = ta.selectionEnd, v = ta.value;
+  if (k === 'list') {
+    const ls = v.lastIndexOf('\n', a - 1) + 1;
+    const le = v.indexOf('\n', Math.max(a, b - 1));
+    const end = le < 0 ? v.length : le;
+    const lines = v.slice(ls, end).split('\n');
+    const allBullets = lines.every(l => /^\s*[-•]\s+/.test(l));
+    const block = lines.map(l => allBullets ? l.replace(/^\s*[-•]\s+/, '') : (/^\s*[-•]\s+/.test(l) ? l : '- ' + l)).join('\n');
+    ta.value = v.slice(0, ls) + block + v.slice(end);
+    ta.setSelectionRange(ls, ls + block.length);
+  } else {
+    const m = { b: '**', i: '_', u: '__' }[k];
+    let sel = v.slice(a, b);
+    if (sel.startsWith(m) && sel.endsWith(m) && sel.length >= m.length * 2) {
+      sel = sel.slice(m.length, sel.length - m.length);
+      ta.value = v.slice(0, a) + sel + v.slice(b);
+      ta.setSelectionRange(a, a + sel.length);
+    } else {
+      const lead = (sel.match(/^\s*/) || [''])[0], trail = (sel.match(/\s*$/) || [''])[0];
+      const core = sel.trim() || 'text';
+      ta.value = v.slice(0, a) + lead + m + core + m + trail + v.slice(b);
+      ta.setSelectionRange(a + lead.length + m.length, a + lead.length + m.length + core.length);
+    }
+  }
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function encodeLogo(file) {
+  const LIMIT = 45000; // Google Sheets cell limit is 50,000 characters
+  return new Promise((resolve, reject) => {
+    const rd = new FileReader();
+    rd.onerror = () => reject(new Error('Couldn\'t read that file.'));
+    rd.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That file isn\'t an image the browser can read. Try a PNG or JPG.'));
+      img.onload = () => {
+        let w = Math.min(600, img.naturalWidth || img.width || 600);
+        while (w >= 60) {
+          const h = Math.max(1, Math.round(w * (img.naturalHeight || img.height) / (img.naturalWidth || img.width)));
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          let url = c.toDataURL('image/png');
+          if (url.length <= LIMIT) return resolve(url);
+          ctx.globalCompositeOperation = 'destination-over'; ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+          for (const q of [0.92, 0.85, 0.75]) { url = c.toDataURL('image/jpeg', q); if (url.length <= LIMIT) return resolve(url); }
+          w = Math.round(w * 0.8);
+        }
+        reject(new Error('That image is too detailed to store. Try a simpler or smaller logo file.'));
+      };
+      img.src = String(rd.result);
+    };
+    rd.readAsDataURL(file);
+  });
+}
+
+/* ============================ events ============================ */
+const ACT = {
+  'tab': el => { view.tab = el.dataset.tab; view.pkgId = null; view.selected = new Set(); render(); window.scrollTo(0, 0); },
+  'open-pkg': el => { view.tab = 'package'; view.pkgId = el.dataset.id; view.selected = new Set(); render(); window.scrollTo(0, 0); },
+  'pkg-filter': el => { view.pkgFilter = el.dataset.v; render(); },
+  'new-pkg': () => openPkgModal(null),
+  'sign-out': () => signOut(),
+  'new-project': () => openProjectModal(''),
+  'proj-rename': el => openProjectModal(el.dataset.project),
+  'proj-remove': el => removeProject(el.dataset.project),
+  'm-save-proj': () => saveProjectFromModal(),
+  'edit-pkg': () => openPkgModal(pkgById(view.pkgId)),
+  'del-pkg': () => {
+    const p = pkgById(view.pkgId), n = invitesFor(p.id).length;
+    ask('Delete package?', 'Delete "' + p.name + '"' + (n ? ' and its ' + n + ' bidder record(s), including any quotes entered' : '') + '? This can\'t be undone.', 'Delete', true).then(ok => {
+      if (!ok) return;
+      S.packages = S.packages.filter(x => x.id !== p.id);
+      S.invites = S.invites.filter(i => i.packageId !== p.id);
+      save('apiDelete', 'Packages', [p.id]);
+      view.tab = 'packages'; view.pkgId = null; render();
+      toast('Package deleted', 'ok');
+    });
+  },
+  'add-bidders': () => openAddBidders(),
+  'ab-new-sub': () => {
+    const p = pkgById(view.pkgId);
+    const picked = Array.from(AB.picked);
+    openSubModal({ active: 'Y', trades: p.trades }, s => { picked.push(s.id); render(); openAddBidders(picked); });
+    $('#s-company').focus();
+  },
+  'send': el => openSend(el.dataset.kind),
+  'copy-tab': () => openCopyTab(),
+  'outlook-one': el => {
+    const i = invById(el.dataset.id), p = pkgById(i.packageId);
+    openMailto('mailto:' + encodeURIComponent(i.email) + '?subject=' + encodeURIComponent(p.project + ' – ' + p.name) +
+      '&body=' + encodeURIComponent('Hi ' + ((i.contact || '').split(' ')[0] || 'there') + ',\n\n'));
+  },
+  'remove-inv': el => {
+    const i = invById(el.dataset.id);
+    const go = () => {
+      S.invites = S.invites.filter(x => x.id !== i.id);
+      view.selected.delete(i.id);
+      save('apiDelete', 'Invites', [i.id]); render();
+    };
+    if (num(i.amount) != null || (i.status && i.status !== 'Not Sent')) {
+      ask('Remove bidder?', 'Remove ' + i.company + ' from this package? Their status' + (num(i.amount) != null ? ' and quote' : '') + ' will be deleted.', 'Remove', true).then(ok => { if (ok) go(); });
+    } else go();
+  },
+  'new-sub': () => openSubModal(null),
+  'edit-sub': (el, e) => { if (e.target.closest('[data-act="del-sub"]')) return; openSubModal(subById(el.dataset.id)); },
+  'del-sub': (el, e) => {
+    e.stopPropagation();
+    const s = subById(el.dataset.id);
+    ask('Delete sub?', 'Delete ' + s.company + ' from your directory? Their past bids stay on your packages.', 'Delete', true).then(ok => {
+      if (!ok) return;
+      S.subs = S.subs.filter(x => x.id !== s.id);
+      save('apiDelete', 'Subs', [s.id]); render();
+    });
+  },
+  'import-subs': () => openImport(),
+  'imp-src': el => { IMP.src = el.dataset.v; drawImportSource(); },
+  'm-budget': () => doBudgetImport(),
+  'import-budget': el => openBudgetImport(el.dataset.project || ''),
+  'del-budget': el => {
+    const pr = el.dataset.project, ids = budgetRows(pr).map(b => b.id);
+    ask('Delete budget?', 'Delete the budget for ' + pr + '? Bid packages keep their cost codes.', 'Delete', true).then(ok => {
+      if (!ok) return;
+      S.budget = S.budget.filter(b => lc(b.project) !== lc(pr));
+      save('apiDelete', 'Budget', ids); render();
+    });
+  },
+  'fmt': el => applyFmt(el.dataset.t, el.dataset.k),
+  'send-via': el => {
+    S.settings.sendVia = el.dataset.v;
+    save('apiSaveSettings', { sendVia: S.settings.sendVia });
+    render();
+    if (el.dataset.v === 'microsoft' && !(S.ms && S.ms.connected)) toast('Finish the Microsoft 365 setup below. Until Outlook is connected, sending is paused.', 'warn');
+  },
+  'ms-save': el => {
+    const cfg = { tenant: $('#ms-tenant').value.trim(), clientId: $('#ms-client').value.trim(), secret: $('#ms-secret').value.trim() };
+    if (!cfg.tenant || !cfg.clientId) return toast('Enter the tenant ID and client ID.', 'err');
+    if (!cfg.secret && !(S.ms && S.ms.hasSecret)) return toast('Paste the client secret value.', 'err');
+    el.disabled = true; el.textContent = 'Saving…';
+    call('apiMsSaveConfig', cfg).then(st => { S.ms = st; render(); toast('Saved. Now click Connect Outlook.', 'ok'); })
+      .catch(e => { el.disabled = false; el.textContent = 'Save Microsoft settings'; toast(errMsg(e), 'err'); });
+  },
+  'ms-refresh': el => {
+    el.disabled = true;
+    call('apiMsStatus').then(st => {
+      S.ms = st; render();
+      toast(st.connected ? 'Connected as ' + st.email : 'Not connected yet. Finish signing in, then refresh again.', st.connected ? 'ok' : 'warn');
+    }).catch(e => { el.disabled = false; toast(errMsg(e), 'err'); });
+  },
+  'ms-disconnect': () => ask('Disconnect Outlook?', 'The bid manager will stop sending through Microsoft 365 until you connect again.', 'Disconnect', true).then(ok => {
+    if (!ok) return;
+    call('apiMsDisconnect').then(st => { S.ms = st; render(); }).catch(e => toast(errMsg(e), 'err'));
+  }),
+  'ms-test': el => {
+    el.disabled = true; el.textContent = 'Sending…';
+    call('apiMsTest').then(to => { el.disabled = false; el.textContent = 'Send me a test email'; toast('Test sent to ' + to + '. Check Outlook.', 'ok'); })
+      .catch(e => { el.disabled = false; el.textContent = 'Send me a test email'; toast('Test failed: ' + errMsg(e), 'err'); });
+  },
+  'ms-copy-redirect': () => {
+    const t = $('#ms-redirect').textContent;
+    const done = () => toast('Redirect URI copied', 'ok');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => { copyRich(esc(t), t) ? done() : toast('Select it and press Ctrl+C', 'warn'); });
+    else if (copyRich(esc(t), t)) done(); else toast('Select it and press Ctrl+C', 'warn');
+  },
+  'logo-remove': () => {
+    S.settings.logo = '';
+    save('apiSaveSettings', { logo: '' });
+    render(); toast('Logo removed', 'ok');
+  },
+  'rm-code': el => { PK.codes = PK.codes.filter(c => c !== el.dataset.code); fillCodeSelects(); },
+  'save-settings': () => {
+    const o = {};
+    $$('[data-setting]').forEach(el => { o[el.dataset.setting] = el.value; });
+    if (o.replyTo && !isEmail(o.replyTo)) return toast('The reply-to address doesn\'t look right.', 'err');
+    if (o.copyTo && !isEmail(o.copyTo)) return toast('The copy address doesn\'t look right.', 'err');
+    o.trades = splitTrades(o.trades).join('\n');
+    const pr = projects();
+    let badLink = false;
+    $$('[data-proj]').forEach(el => {
+      const v = el.value.trim();
+      if (v && !/^https?:\/\//i.test(v)) badLink = true;
+      pr[lc(el.dataset.proj)] = { name: el.dataset.proj, plansLink: v };
+    });
+    if (badLink) return toast('Plans links should start with https://', 'err');
+    o.projects = JSON.stringify(pr);
+    const lines = String(o.costCodes || '').split(/\n/).filter(x => x.trim());
+    const parsed = lines.map(parseCodeLine).filter(Boolean);
+    if (parsed.length < lines.length) toast((lines.length - parsed.length) + ' cost code line(s) skipped: each line must start with a code like 09-29-00', 'warn');
+    o.costCodes = parsed.sort((a, b) => a.code.localeCompare(b.code)).map(r => r.code + ' ' + r.desc).join('\n');
+    Object.assign(S.settings, o);
+    save('apiSaveSettings', o).then(r => { if (r) toast('Settings saved', 'ok'); });
+    render();
+  },
+  'reset-demo': (el, e) => { e.preventDefault(); Mock.reset(); load(); },
+  'close-modal': () => closeModal(),
+  'overlay': (el, e) => { if (e.target === el) closeModal(); },
+  'toggle-chip': el => el.classList.toggle('on'),
+  'm-save-pkg': el => savePkgFromModal(el.dataset.id),
+  'm-save-sub': el => saveSubFromModal(el.dataset.id),
+  'm-add-bidders': () => addPickedBidders(),
+  'm-send': () => doSend(),
+  'm-outlook': () => useOutlook(),
+  'ol-copy': () => { if (OL && copyRich(OL.html, OL.text)) toast('Copied. Click in the Outlook email and press Ctrl+V.', 'ok'); else toast('Copy was blocked. Select the message in this window and press Ctrl+C.', 'warn'); },
+  'ol-done': () => outlookDone(),
+  'ol-reopen': () => { if (OL) openMailto(OL.url); },
+  'm-copy': () => copyTab(),
+  'm-import': () => doImport()
+};
+
+const CHG = {
+  'pkg-status': el => { const p = pkgById(view.pkgId); p.status = el.value; save('apiSave', 'Packages', [p]); renderSoon(); },
+  'inv-status': el => {
+    const i = invById(el.dataset.id), p = pkgById(i.packageId);
+    i.status = el.value;
+    if (i.status === 'Quote Received' && !i.receivedAt) i.receivedAt = today();
+    save('apiSave', 'Invites', [i]);
+    if (i.status === 'Awarded' && p.status !== 'Awarded') {
+      p.status = 'Awarded'; save('apiSave', 'Packages', [p]);
+      toast('Package marked Awarded', 'ok');
+    }
+    renderSoon();
+  },
+  'inv-amount': el => {
+    const i = invById(el.dataset.id);
+    const raw = el.value.trim();
+    const n = num(raw);
+    if (raw && n == null) { toast('Enter the quote as a number, like 148500', 'err'); el.value = plainNum(i.amount); return; }
+    i.amount = n == null ? '' : String(n);
+    if (n != null && PRE_QUOTE.includes(i.status || 'Not Sent')) i.status = 'Quote Received';
+    if (n != null && !i.receivedAt) i.receivedAt = today();
+    save('apiSave', 'Invites', [i]);
+    renderSoon();
+  },
+  'inv-date': el => { const i = invById(el.dataset.id); i.receivedAt = el.value; save('apiSave', 'Invites', [i]); },
+  'inv-notes': el => { const i = invById(el.dataset.id); i.notes = el.value.trim(); save('apiSave', 'Invites', [i]); },
+  'sel': el => { if (el.checked) view.selected.add(el.dataset.id); else view.selected.delete(el.dataset.id); renderSoon(); },
+  'sel-all': el => { invitesFor(view.pkgId).forEach(i => { if (el.checked) view.selected.add(i.id); else view.selected.delete(i.id); }); renderSoon(); },
+  'sub-trade': el => { view.subTrade = el.value; render(); },
+  'ab-match': el => { AB.matchOnly = el.checked; drawAddBidders(); },
+  'ab-pick': el => { if (el.checked) AB.picked.add(el.dataset.id); else AB.picked.delete(el.dataset.id); const c = $('#ab-count'); if (c) c.textContent = AB.picked.size ? AB.picked.size + ' selected' : ''; },
+  'rcpt': () => updateSendPreview(),
+  'olbcc': el => { S.settings.outlookBcc = el.checked ? 'Y' : 'N'; save('apiSaveSettings', { outlookBcc: S.settings.outlookBcc }); },
+  'ownsig': el => { S.settings.outlookOwnSig = el.checked ? 'Y' : 'N'; save('apiSaveSettings', { outlookOwnSig: S.settings.outlookOwnSig }); },
+  'pkg-div': el => { view.pkgDiv = el.value; render(); },
+  'pkg-project': el => { view.pkgProject = el.value; render(); },
+  'proj-pick': el => {
+    const input = document.getElementById(el.id.replace('-sel', ''));
+    if (!input) return;
+    if (el.value === '__new') { input.style.display = ''; input.value = ''; input.focus(); }
+    else { input.style.display = 'none'; input.value = el.value; }
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  },
+  'f-div': el => { PK.div = el.value; fillCodeSelects(); },
+  'f-code': el => {
+    const c = el.value;
+    if (!c) return;
+    if (!PK.codes.includes(c)) PK.codes.push(c);
+    const name = $('#f-name');
+    if (name && !name.value.trim()) name.value = codeInfo(c, $('#f-project').value).desc;
+    fillCodeSelects();
+  },
+  'imp-file': el => {
+    const file = el.files && el.files[0];
+    if (!file) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      const rows = fromContactsCSV(String(rd.result));
+      if (!rows.length) toast('No contacts found in that file. Make sure it\'s a .csv export with a header row.', 'err');
+      setImportRows(rows);
+    };
+    rd.onerror = () => toast('Couldn\'t read that file', 'err');
+    rd.readAsText(file);
+  },
+  'logo-file': el => {
+    const file = el.files && el.files[0];
+    if (!file) return;
+    encodeLogo(file).then(url => {
+      S.settings.logo = url;
+      save('apiSaveSettings', { logo: url, logoWidth: S.settings.logoWidth || '180' }).then(r => { if (r) toast('Logo saved', 'ok'); });
+      render();
+    }).catch(e => toast(errMsg(e), 'err'));
+  },
+  'imp-sel': el => { IMP.rows[+el.dataset.i].sel = el.checked; drawImportReview(); },
+  'imp-all': el => { IMP.rows.forEach(r => { r.sel = el.checked; }); drawImportReview(); },
+  'imp-bulk': el => {
+    const t = el.value;
+    if (!t) return;
+    IMP.rows.forEach(r => { if (r.sel) r.trades = splitTrades((r.trades || '') + ',' + t).join(', '); });
+    drawImportReview();
+  }
+};
+
+const INP = {
+  'search': el => { view.search = el.value; render(); },
+  'sub-search': el => { view.subSearch = el.value; render(); },
+  'ab-q': el => { AB.q = el.value; drawAddBidders(); },
+  'preview': () => updateSendPreview(),
+  'imp-paste': el => setImportRows(fromPastedAddresses(el.value)),
+  'imp-excel': el => setImportRows(fromExcel(el.value)),
+  'imp-cell': el => {
+    const r = IMP.rows[+el.dataset.i];
+    r[el.dataset.k] = el.value;
+    const st = importStatus(r), tag = $('#imp-st-' + el.dataset.i);
+    if (tag) { tag.className = 'imp-st ' + st[0]; tag.textContent = st[1]; }
+    updateImportSum();
+  },
+  'f-project': el => {
+    if ($('#f-div')) fillCodeSelects();
+    const link = projectPlans(el.value);
+    if (!PK.plansTouched && $('#f-plans')) $('#f-plans').value = link;
+  },
+  'f-plans': () => { PK.plansTouched = true; },
+  'bud': () => updateBudgetSummary()
+};
+
+document.addEventListener('click', e => {
+  const code = e.target.closest('.ph code');
+  if (code) {
+    const ta = $('#m-body') || (document.activeElement && document.activeElement.tagName === 'TEXTAREA' ? document.activeElement : null);
+    if (ta) { const s = ta.selectionStart || ta.value.length; ta.value = ta.value.slice(0, s) + code.textContent + ta.value.slice(ta.selectionEnd || s); ta.focus(); ta.dispatchEvent(new Event('input', { bubbles: true })); }
+    return;
+  }
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  if (el.tagName === 'A') e.preventDefault();
+  const fn = ACT[el.dataset.act];
+  if (fn) fn(el, e);
+});
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-change]');
+  if (el && CHG[el.dataset.change]) CHG[el.dataset.change](el, e);
+});
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-input]');
+  if (el && INP[el.dataset.input]) INP[el.dataset.input](el, e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && modalRoot.innerHTML && !document.getElementById('confirm-root').innerHTML) closeModal();
+  if (e.key === 'Enter' && e.target.id === 'tp-new') {
+    e.preventDefault();
+    const v = e.target.value.replace(/[,;\n]/g, ' ').trim();
+    if (!v) return;
+    const existing = $$('#tp .chip').find(c => lc(c.dataset.t) === lc(v));
+    if (existing) existing.classList.add('on');
+    else {
+      const c = document.createElement('span');
+      c.className = 'chip on'; c.dataset.act = 'toggle-chip'; c.dataset.t = v; c.textContent = v;
+      e.target.before(c);
+    }
+    e.target.value = '';
+  }
+  if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('amt')) e.target.blur();
+  if ((e.ctrlKey || e.metaKey) && e.target.classList && e.target.classList.contains('rich') && /^[biu]$/i.test(e.key)) {
+    e.preventDefault();
+    applyFmt(e.target.id, e.key.toLowerCase());
+  }
+});
+
+/* ============================ start ============================ */
+function load() {
+  if (REMOTE && !getToken()) return showLogin('');
+  app.innerHTML = '<div class="loading">Loading bid manager…</div>';
+  call('apiLoad').then(d => {
+    const st = {};
+    Object.keys(DEFAULTS).forEach(k => { st[k] = (d.settings && k in d.settings) ? d.settings[k] : DEFAULTS[k]; });
+    S = { subs: d.subs || [], packages: d.packages || [], invites: d.invites || [], budget: d.budget || [], settings: st, quota: d.quota, dbUrl: d.dbUrl || '', demo: !!d.demo, ms: d.ms || {} };
+    render();
+  }).catch(e => {
+    if (e && e.auth) return;
+    app.innerHTML = '<main><div class="card pad"><b style="color:var(--bad)">Couldn\'t load the bid manager.</b><p>' + esc(errMsg(e)) +
+      '</p><p class="muted">If this mentions permissions, open the Apps Script editor, choose <b>authorize</b> in the function dropdown, click Run, and approve. Then reload this page.</p></div></main>';
+  });
+}
+load();
+</script>
+</body>
+</html>
